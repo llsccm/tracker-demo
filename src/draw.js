@@ -1,4 +1,4 @@
-import { getCardNumAndSuit } from './utils/get'
+import { getCardNumAndSuit, transformLetter } from './utils/get'
 import allCard from './map/allCard'
 const emojiFontSize = '15px' // 可变的字体大小，可以根据需要进行调整
 

@@ -1,7 +1,7 @@
 import { getCardNumAndSuit } from './utils/get'
 import html from './html/iframe'
 import skinHTML from './html/skin'
-import { drawMiZhu } from './dom'
+import { drawMiZhu } from './draw'
 import { MiZhuCal } from './utils/calc'
 
 let iframe = null
@@ -36,83 +36,16 @@ export function addCardTypeButton(cardType) {
   }
 }
 
-export function addQuanBian(cardID) {
-  let quanBianText = document.getElementById('iframe-source').contentWindow.document.getElementById('suit')
-  if (enableQuanBian) {
-    if (getCardNumAndSuit(cardID)['cardSuit'] == '♦' && !quanBian.has('♦')) {
-      quanBianText.innerText += '♦️'
-      quanBian.add('♦')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥' && !quanBian.has('♥')) {
-      quanBianText.innerText += '♥️'
-      quanBian.add('♥')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠' && !quanBian.has('♠')) {
-      quanBianText.innerText += '♠️'
-      quanBian.add('♠')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣' && !quanBian.has('♣')) {
-      quanBianText.innerText += '♣️'
-      quanBian.add('♣')
-    }
-  }
-}
-
-export function addSuit(cardID) {
-  let toBeAddBoTu = document.getElementById('iframe-source').contentWindow.document.getElementById('boTu')
-  if (enableBoTu) {
-    if (getCardNumAndSuit(cardID)['cardSuit'] == '♦' && !boTu.has('♦')) {
-      toBeAddBoTu.innerText += '♦️'
-      boTu.add('♦')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥' && !boTu.has('♥')) {
-      toBeAddBoTu.innerText += '♥️'
-      boTu.add('♥')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠' && !boTu.has('♠')) {
-      toBeAddBoTu.innerText += '♠️'
-      boTu.add('♠')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣' && !boTu.has('♣')) {
-      toBeAddBoTu.innerText += '♣️'
-      boTu.add('♣')
-    }
-  }
-
-  let toBeAddLuanJi = document.getElementById('iframe-source').contentWindow.document.getElementById('suit')
-  if (enableLuanJi) {
-    luanJi.add(getCardNumAndSuit(cardID)['cardSuit'])
-    for (const suit of luanJi) {
-      toBeAddLuanJi.innerText += suit
-    }
-  }
-  if (enableHuaMu) {
-    clearSuit()
-    if (getCardNumAndSuit(cardID)['cardSuit'] == '♦') {
-      toBeAdd.innerText += '🟥'
-      huaMu.add('♦')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥') {
-      toBeAdd.innerText += '🟥'
-      huaMu.add('♥')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠') {
-      toBeAdd.innerText += '⬛️'
-      huaMu.add('♠')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣') {
-      toBeAdd.innerText += '⬛️'
-      huaMu.add('♣')
-    }
-  }
-}
-
-export function clearSuit() {
-  if (enableQuanBian) {
-    quanBian = new Set()
-    document.getElementById('iframe-source').contentWindow.document.getElementById('suit').innerText = '权变 '
-  }
-  if (enableBoTu) {
-    boTu = new Set()
-    document.getElementById('iframe-source').contentWindow.document.getElementById('boTu').innerText = '博图 '
-  }
-  if (enableHuaMu) {
-    document.getElementById('iframe-source').contentWindow.document.getElementById('suit').innerText = '化木 '
-  }
-  if (enableLuanJi) {
-    luanJi = new Set()
-    document.getElementById('iframe-source').contentWindow.document.getElementById('suit').innerText = '乱击 '
+export function clearSuit(suitEl, suitStr) {
+  switch (suitEl) {
+    case 'suit':
+      document.getElementById('iframe-source').contentWindow.document.getElementById('suit').innerText = suitStr
+      break
+    case 'boTu':
+      document.getElementById('iframe-source').contentWindow.document.getElementById('boTu').innerText = suitStr
+      break
+    default:
+      break
   }
 }
 
@@ -128,8 +61,8 @@ export function hideOrderContainer(size) {
   }
 }
 
-export function addFrame() {
-  isFrameAdd = true
+export function addFrame(userID) {
+  // isFrameAdd = true
   let div = document.getElementById('createIframe')
 
   if (!div) {
@@ -210,13 +143,12 @@ export function addFrame() {
     iframe.contentWindow.document.write(html)
     iframe.contentWindow.document.close()
   }
-  buttonClick()
+  buttonClick(userID)
   initDragElement()
 }
 
-function buttonClick() {
+function buttonClick(userID) {
   document.getElementById('iframe-source').contentWindow.document.getElementById('uuid').innerText = 'id：' + userID
-
   var toggle = document.getElementById('toggle-me')
   toggle.onmousedown = function () {
     closeIframe = !closeIframe
@@ -246,7 +178,7 @@ function buttonClick() {
         for (const card of shoupai[idOrder[m]]) {
           MiZhuCards.push(getCardNumAndSuit(card)['cardNum'])
         }
-        MiZhuCal(MiZhuCards, MiZhuCards.length)
+        let MiZhuRes = MiZhuCal(MiZhuCards, MiZhuCards.length)
         drawMiZhu(MiZhuRes)
       }
     } else {
@@ -261,7 +193,7 @@ function buttonClick() {
           for (const card of shoupai[idOrder[m]]) {
             MiZhuCards.push(getCardNumAndSuit(card)['cardNum'])
           }
-          MiZhuCal(MiZhuCards, MiZhuCards.length)
+          let MiZhuRes = MiZhuCal(MiZhuCards, MiZhuCards.length)
           drawMiZhu(MiZhuRes)
         }
       }

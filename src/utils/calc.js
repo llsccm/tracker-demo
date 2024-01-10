@@ -1,4 +1,4 @@
-import { getCardNumAndSuit } from './get'
+import { getCardNumAndSuit, transformLetter } from './get'
 import { drawYanJiao } from '../dom'
 
 let combos = []
@@ -137,19 +137,6 @@ function containsStr(arr, str) {
   return false
 }
 
-function transformLetter(num) {
-  switch (num) {
-    case 11:
-      return 'J'
-    case 12:
-      return 'Q'
-    case 13:
-      return 'K'
-    default:
-      return num
-  }
-}
-
 function toLetter(combo) {
   var toLetter = []
   for (var i = 0; i < combo.length; i++) {
@@ -181,22 +168,21 @@ export function JiZhanCal(cardNum) {
   document.getElementById('iframe-source').contentWindow.document.getElementById('jizhan').innerHTML = '牌堆比' + cardNum + '大张数：' + bigger + '<br>' + '牌堆比' + cardNum + '小张数：' + smaller
 }
 
-var MiZhuCards = [10, 2, 3, 7, 6]
-var MiZhuRes
+// var MiZhuCards = [10, 2, 3, 7, 6]
 //记录结果的位置，如果有相同则略过
-var pathArr = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-var pathSum
-var pathArrSet = new Set()
+// var pathArr = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+// var pathSum
+// var pathArrSet = new Set()
 
 // function mizhuCal(cards, index, res,sum) {
 export function MiZhuCal(arr, n) {
-  pathArrSet = new Set()
-  MiZhuRes = []
-  var opsize = Math.pow(2, MiZhuCards.length)
+  let pathArrSet = new Set()
+  let MiZhuRes = []
+  var opsize = Math.pow(2, [10, 2, 3, 7, 6].length)
   // Run from counter 000..1 to 111..1
   for (let counter = 1; counter < opsize; counter++) {
-    pathArr = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    pathSum = 0
+    let pathArr = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    let pathSum = 0
 
     for (let j = 0; j < n; j++) {
       // Check if jth bit in the counter is set
@@ -220,4 +206,5 @@ export function MiZhuCal(arr, n) {
       }
     }
   }
+  return MiZhuRes
 }

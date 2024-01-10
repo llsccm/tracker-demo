@@ -1,4 +1,4 @@
-import { addCardTypeButton, clearButton, clearSuit, addQuanBian, addSuit, resetOrderContainer, hideOrderContainer } from './dom'
+import { addCardTypeButton, clearButton, clearSuit, resetOrderContainer, hideOrderContainer } from './dom'
 import { getCardNumAndSuit, allCardToCurrentMode, currentModeCardType } from './utils/get'
 import { calcResult, JiZhanCal } from './utils/calc'
 import { drawShouPai, drawRemShouPai, drawDingOrDi } from './draw'
@@ -181,7 +181,21 @@ export function mainLogic(args) {
   }
   //博图，用于检测什么适合清空博图花色
   if (className == 'GsCGamephaseNtf' && Round == 0 && (gameState.enableBoTu || gameState.enableLuanJi || gameState.enableQuanBian)) {
-    clearSuit()
+    if (gameState.enableQuanBian) {
+      quanBian = new Set()
+      clearSuit('suit', '权变 ')
+    }
+    if (gameState.enableBoTu) {
+      gameState.boTu = new Set()
+      clearSuit('boTu', '博图 ')
+    }
+    if (gameState.enableHuaMu) {
+      clearSuit('suit', '化木 ')
+    }
+    if (gameState.enableLuanJi) {
+      gameState.luanJi = new Set()
+      clearSuit('suit', '乱击 ')
+    }
   }
   if (className == 'GsCModifyUserseatNtf') {
     room.size = Infos['length']
@@ -203,7 +217,7 @@ export function mainLogic(args) {
     currentMode = allCardToCurrentMode(room.cardList)
     currentCardType = currentModeCardType(currentMode)
 
-    gameState = gameStart(room.cardList)
+    gameStart(room.cardList)
     for (let i = 1; i <= 3; i++) {
       clearButton('type' + i)
     }
@@ -629,8 +643,9 @@ export function skinLogic(args) {
     UserID = args[0]['UserID']
     addSkinFrame() //预先注入
     console.warn('userID' + userID)
-    if (!isFrameAdd) {
-      addFrame()
+    if (!gameState.isFrameAdd) {
+      gameState.isFrameAdd = true
+      addFrame(userID)
     }
   }
 
@@ -651,7 +666,7 @@ export function skinLogic(args) {
   //进入游戏先进入这个class，点击皮肤按钮才进入“资源组加载完毕：selectSkin”
   //只适配当前用户的皮肤 && typeof(skinMap[GeneralID])!='undefined'
   // clientID 是seatID 我的seatid通过武将皮肤来获取，进场先跳几条换皮肤的信息，这个时候clientID是正常的，然后clientID变成座位号，可以通过重复的信息确定当前武将id，如果当前武将id等于信息台的武将id，则可以获取到myID
-  if (className == 'ClientGeneralSkinRep' && (curUserID == userID || curGeneral == GeneralSkinList[0]['GeneralID'])) {
+  if (className == 'ClientGeneralSkinRep' && (curUserID == userID || gameState.curGeneral == GeneralSkinList[0]['GeneralID'])) {
     console.warn('curUserID' + curUserID + 'userID' + userID + 'skin')
     GeneralID = GeneralSkinList[0]['GeneralID']
     gameState.curGeneral = gameState.curGeneral === -1 ? GeneralSkinList[0]['GeneralID'] : gameState.curGeneral
@@ -802,7 +817,7 @@ function gameStart(cardList) {
   gameState.isClickSkinSelect = false
   gameState.myID = -1
   gameState.curGeneral = -1
-  clearSuit()
+  // clearSuit()
 }
 
 function addCard(id, cardID, zone, ToPosition, SpellID) {
@@ -840,7 +855,7 @@ function addCard(id, cardID, zone, ToPosition, SpellID) {
     deckState.remShouPai.delete(cardID)
     //吕蒙博图
     //console.warn(getCardNumAndSuit(cardID)["cardSuit"])
-    if (enableBoTu) {
+    if (gameState.enableBoTu) {
       addSuit(cardID)
     }
   } else if (zone == 3) {
@@ -850,7 +865,7 @@ function addCard(id, cardID, zone, ToPosition, SpellID) {
     }
     deckState.remShouPai.delete(cardID)
   } else if (zone == 4) {
-    biaoji[id].push(cardID)
+    deckState.biaoji[id].push(cardID)
     if (deckState.paidui.delete(cardID)) {
       removeCardType(cardID)
     }
@@ -860,9 +875,9 @@ function addCard(id, cardID, zone, ToPosition, SpellID) {
     if (SpellID == 414 || SpellID == 3178) {
       cardID = deckState.unknownCard.splice(-1, 1)[0]
     }
-    if (typeof cardID != 'undefined' && typeof shoupai[idOrder[id]] != 'undefined') {
+    if (typeof cardID != 'undefined' && typeof deckState.shoupai[gameState.idOrder[id]] != 'undefined') {
       gameState.isDuanXian = false
-      shoupai[idOrder[id]].add(cardID)
+      deckState.shoupai[gameState.idOrder[id]].add(cardID)
       if (deckState.paidui.delete(cardID)) {
         removeCardType(cardID)
       }
@@ -872,13 +887,13 @@ function addCard(id, cardID, zone, ToPosition, SpellID) {
     }
     deckState.remShouPai.delete(cardID)
   } else if (zone == 6) {
-    zhuangbei[id].push(cardID)
+    deckState.zhuangbei[id].push(cardID)
     if (deckState.paidui.delete(cardID)) {
       removeCardType(cardID)
     }
     deckState.remShouPai.delete(cardID)
   } else if (zone == 7) {
-    panding[id].push(cardID)
+    deckState.panding[id].push(cardID)
     if (deckState.paidui.delete(cardID)) {
       removeCardType(cardID)
     }
@@ -903,7 +918,7 @@ function addCard(id, cardID, zone, ToPosition, SpellID) {
   //出现在别的区域，清除此牌
   if (zone != 5) {
     for (let i = 0; i < gameState.idOrderPre.length; i++) {
-      shoupai[i].delete(cardID)
+      deckState.shoupai[i].delete(cardID)
     }
   }
 }
@@ -990,11 +1005,11 @@ function removeCard(id, cardID, zone, FromPosition) {
       console.warn('duanxian' + zone + cardID)
     }
   } else if (zone == 5) {
-    if (typeof shoupai[idOrder[id]] != 'undefined') {
+    if (typeof deckState.shoupai[gameState.idOrder[id]] != 'undefined') {
       gameState.isDuanXian = false
 
       for (let i = 0; i < gameState.idOrderPre.length; i++) {
-        shoupai[i].delete(cardID)
+        deckState.shoupai[i].delete(cardID)
       }
       if (deckState.paidui.delete(cardID)) {
         removeCardType(cardID)
@@ -1006,14 +1021,14 @@ function removeCard(id, cardID, zone, FromPosition) {
   }
   //装备区丢牌
   else if (zone == 6) {
-    if (typeof zhuangbei[id] != 'undefined') {
+    if (typeof deckState.zhuangbei[id] != 'undefined') {
       gameState.isDuanXian = false
-      let index = zhuangbei[id].indexOf(cardID)
+      let index = deckState.zhuangbei[id].indexOf(cardID)
       if (index == -1) {
         let cardID = 0
-        index = zhuangbei[id].indexOf(cardID)
+        index = deckState.zhuangbei[id].indexOf(cardID)
       }
-      zhuangbei[id].splice(index, 1)
+      deckState.zhuangbei[id].splice(index, 1)
       if (deckState.paidui.delete(cardID)) {
         removeCardType(cardID)
       }
@@ -1024,13 +1039,13 @@ function removeCard(id, cardID, zone, FromPosition) {
   }
   //判定
   else if (zone == 7) {
-    if (typeof panding[id] != 'undefined') {
-      let index = panding[id].indexOf(cardID)
+    if (typeof deckState.panding[id] != 'undefined') {
+      let index = deckState.panding[id].indexOf(cardID)
       if (index == -1) {
         let cardID = 0
-        index = panding[id].indexOf(cardID)
+        index = deckState.panding[id].indexOf(cardID)
       }
-      panding[id].splice(index, 1)
+      deckState.panding[id].splice(index, 1)
       if (deckState.paidui.delete(cardID)) {
         removeCardType(cardID)
       }
@@ -1040,7 +1055,7 @@ function removeCard(id, cardID, zone, FromPosition) {
     }
   } else if (zone == 8) {
     deckState.jineng.delete(cardID)
-    if (paidui.delete(cardID)) {
+    if (deckState.paidui.delete(cardID)) {
       removeCardType(cardID)
     }
   } else if (zone == 9) {
@@ -1163,6 +1178,68 @@ function addCardType(cardID) {
       //document.getElementById('iframe-source').contentWindow.document.getElementById("paiduiSize").innerText ="牌堆张数: "+ paidui.size;
       document.getElementById('iframe-source').contentWindow.document.getElementById('hongsha').innerText = '红杀 × ' + deckState.suits.hongsha
       document.getElementById('iframe-source').contentWindow.document.getElementById('heisha').innerText = '黑杀 × ' + deckState.suits.heisha
+    }
+  }
+}
+
+export function addQuanBian(cardID) {
+  let quanBianText = document.getElementById('iframe-source').contentWindow.document.getElementById('suit')
+  if (gameState.enableQuanBian) {
+    if (getCardNumAndSuit(cardID)['cardSuit'] == '♦' && !gameState.quanBian.has('♦')) {
+      quanBianText.innerText += '♦️'
+      gameState.quanBian.add('♦')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥' && !gameState.quanBian.has('♥')) {
+      quanBianText.innerText += '♥️'
+      gameState.quanBian.add('♥')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠' && !gameState.quanBian.has('♠')) {
+      quanBianText.innerText += '♠️'
+      gameState.quanBian.add('♠')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣' && !gameState.quanBian.has('♣')) {
+      quanBianText.innerText += '♣️'
+      gameState.quanBian.add('♣')
+    }
+  }
+}
+
+export function addSuit(cardID) {
+  let toBeAddBoTu = document.getElementById('iframe-source').contentWindow.document.getElementById('boTu')
+  if (gameState.enableBoTu) {
+    if (getCardNumAndSuit(cardID)['cardSuit'] == '♦' && !gameState.boTu.has('♦')) {
+      toBeAddBoTu.innerText += '♦️'
+      gameState.boTu.add('♦')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥' && !gameState.boTu.has('♥')) {
+      toBeAddBoTu.innerText += '♥️'
+      gameState.boTu.add('♥')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠' && !gameState.boTu.has('♠')) {
+      toBeAddBoTu.innerText += '♠️'
+      gameState.boTu.add('♠')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣' && !gameState.boTu.has('♣')) {
+      toBeAddBoTu.innerText += '♣️'
+      gameState.boTu.add('♣')
+    }
+  }
+
+  let toBeAddLuanJi = document.getElementById('iframe-source').contentWindow.document.getElementById('suit')
+  if (gameState.enableLuanJi) {
+    gameState.luanJi.add(getCardNumAndSuit(cardID)['cardSuit'])
+    for (const suit of luanJi) {
+      toBeAddLuanJi.innerText += suit
+    }
+  }
+  if (gameState.enableHuaMu) {
+    clearSuit()
+    if (getCardNumAndSuit(cardID)['cardSuit'] == '♦') {
+      toBeAdd.innerText += '🟥'
+      gameState.huaMu.add('♦')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥') {
+      toBeAdd.innerText += '🟥'
+      gameState.huaMu.add('♥')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠') {
+      toBeAdd.innerText += '⬛️'
+      gameState.huaMu.add('♠')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣') {
+      toBeAdd.innerText += '⬛️'
+      gameState.huaMu.add('♣')
     }
   }
 }

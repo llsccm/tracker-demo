@@ -61,3 +61,16 @@ export function currentModeCardType(cards) {
   })
   return cardInfoMap
 }
+
+export function transformLetter(num) {
+  switch (num) {
+    case 11:
+      return 'J'
+    case 12:
+      return 'Q'
+    case 13:
+      return 'K'
+    default:
+      return num
+  }
+}
