@@ -1,5 +1,4 @@
-import { mainLogic } from './mainLogic'
-import { skinLogic } from './skinLogic'
+import { mainLogic, skinLogic } from './logic'
 const classList = ['SsCChatmsgNtf', 'GsCModifyUserseatNtf', 'MsgReconnectGame', 'MsgGamePlayCardNtf', 'PubGsCUseSpell', 'ClientHappyGetFriendHandcardRep', 'GsCRoleOptTargetNtf', 'PubGsCMoveCard', 'GsCFirstPhaseRole', 'GsCGamephaseNtf', 'PubGsCUseCard', 'ClientGeneralSkinRep', 'ClientLoginRep', 'MsgReconnectGame', 'ClientRoleGeneralStarRep', 'SmsgGameStateData']
 
 export function main() {
