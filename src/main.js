@@ -34,6 +34,9 @@ export function main() {
     mainInfo['seatId'] = args[0]['seatId']
     mainInfo['SeatID'] = args[0]['SeatID']
     mainInfo['Round'] = args[0]['Round']
+    mainInfo['uid'] = args[0]['uid']
+    mainInfo['UserID'] = args["UserID"]
+
   }
   let mainInfoToMainLogic = JSON.parse(JSON.stringify(mainInfo))
   try {

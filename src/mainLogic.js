@@ -34,7 +34,7 @@ let gameState = {
   idOrderPreSet: new Set(), //按顺序存储idOrder
   isDuanXian: false,
   remShouPai: new Set(), //洗牌后剩余手牌
-  temShouPai, //用于处理临时手牌
+  temShouPai: new Set(), //用于处理临时手牌
   isDiMeng: false, //缔盟，清忠，等手牌全给情况
   mySeatID: new Set(), // 用于糜竺，可能包括不仅仅两个人的
   GuoZhanGeneral: [],
@@ -103,7 +103,7 @@ var cardNumAndSuit
 
 var b = 1562902854
 var isB = false
-
+var isAutoCloseEnabled = true;
 //room
 let room = {
   cardList: [],
@@ -145,7 +145,30 @@ export function mainLogic(args) {
   var Round = args['Round']
   var curUserID = args['curUserID']
   var userID = args['userID']
+  var UserID = args["UserID"];
 
+  var enableBoTu = false;
+  var enableQuanBian = false;
+
+
+  if(className == 'ClientLoginRep' ){
+    userID = args["uid"];
+    //addSkinFrame();//预先注入
+    console.warn("userID"+userID);
+    // if(!isFrameAdd){
+    //   addFrame();
+    //   var elmnt = document.getElementById('createIframe');
+    //   buttonClick();
+    //   initDragElement();
+    // }
+  }
+  //enable博图
+  if(className == 'ClientGeneralSkinRep' && GeneralSkinList[0]['GeneralID'] == 306 || (curUserID == UserID && !gameStatusMap.isGuoZhanBiaoZhun && !gameStatusMap.isGuoZhanYingBian)){
+    enableBoTu = true;
+  }
+  if(className == 'ClientGeneralSkinRep' && GeneralSkinList[0]['GeneralID'] == 7003 && curUserID == UserID){
+    enableQuanBian = true;
+  }
   //博图，用于检测什么适合清空博图花色
   if (className == 'GsCGamephaseNtf' && Round == 0 && (gameState.enableBoTu || gameState.enableLuanJi || gameState.enableQuanBian)) {
     clearSuit()
