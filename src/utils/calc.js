@@ -1,7 +1,9 @@
 import { getCardNumAndSuit } from './get'
 import { drawYanJiao } from '../dom'
 
-export function calcResult() {
+let combos = []
+
+export function calcResult(arr) {
   combos = []
   arr.sort()
   findCombos(arr)

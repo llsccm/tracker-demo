@@ -65,8 +65,6 @@ export function gameStart({ cardList, gameStatusMap }) {
   //cardType 基本1锦囊2装备3其他4
   let isSeatOrder = false //座位是否安排好了
   let isFrameAdd = false
-  let arr = []
-  let combos = []
   let newIdOrder = {}
   let newShouPai = {}
   let idOrderPreSet = new Set()
@@ -112,8 +110,6 @@ export function gameStart({ cardList, gameStatusMap }) {
     isGameStart,
     isSeatOrder,
     isFrameAdd,
-    arr,
-    combos,
     newIdOrder,
     newShouPai,
     idOrderPreSet,

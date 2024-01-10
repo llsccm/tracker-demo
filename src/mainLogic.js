@@ -27,8 +27,6 @@ let gameState = {
   isGameStart: false,
   isSeatOrder: false, //座位是否安排好了
   isFrameAdd: false,
-  arr: [],
-  combos: [],
   idOrder: {}, //key为玩家id，value为实际座位顺序
   idOrderPre: [], //按顺序存储idOrder
   idOrderPreSet: new Set(), //按顺序存储idOrder
@@ -247,11 +245,11 @@ export function mainLogic(args) {
 
   //严教
   if (className == 'GsCRoleOptTargetNtf' && typeof Params != 'undefined' && Param == 0 && card.SpellID == 945) {
-    gameState.arr = []
+    let arr = []
     for (const p of Params) {
-      gameState.arr.push(parseInt(getCardNumAndSuit(p)['cardNum']))
+      arr.push(parseInt(getCardNumAndSuit(p)['cardNum']))
     }
-    calcResult()
+    calcResult(arr)
   }
 
   //断线
