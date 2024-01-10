@@ -253,6 +253,7 @@ export function mainLogic(args) {
     }
     calcResult()
   }
+
   //断线
   if (gameState.isDuanXian || isB) {
     if (document.getElementById('createIframe')) {
@@ -558,4 +559,8 @@ export function mainLogic(args) {
     }
     isAutoCloseEnabled = true
   }
+}
+
+function gameInit(){
+  //wip
 }
