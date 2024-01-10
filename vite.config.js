@@ -14,7 +14,8 @@ export default defineConfig({
         description: '打小抄支持网页版和微端，微端文件请加群562224095',
         icon: 'https://i0.hdslb.com/bfs/new_dyn/17ec41a0ca79633b77399065ab80da3f2138912.png',
         namespace: 'https://greasyfork.org/scripts/448004',
-        match: ['*://game.iwan4399.com/yxsgs/*', '*://*.sanguosha.com/*']
+        match: ['*://game.iwan4399.com/yxsgs/*', '*://*.sanguosha.com/*'],
+        grant : 'none'
       },
       server: {
         mountGmApi: false,
