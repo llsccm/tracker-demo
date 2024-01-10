@@ -1,8 +1,6 @@
 // import './style.css';
-// import { setupCounter } from './counter.js';
 import { main } from './main.js'
 
-const version = '2.5.4'
 window.WDVerSion = '1.0.0'
 const SGSMODULE = []
 if (!console._log) console._log = console.log
