@@ -4,6 +4,7 @@ import skinHTML from './html/skin'
 
 let iframe = null
 let closeIframe = false
+const version = ' 2.5.5'
 
 export function clearButton(type) {
   var div = document.getElementById('iframe-source').contentWindow.document.getElementById(type)
@@ -399,7 +400,7 @@ export function addSkinFrame() {
   //skinLogic end
 }
 
-function updateSkinList(generalID) {
+export function updateSkinList(generalID) {
   document.getElementById('createSkinIframeSource').contentWindow.document.body.innerHTML = ''
   //这是原皮
   var imgSkin = document.createElement('img')
@@ -446,7 +447,7 @@ function updateSkinList(generalID) {
     })
 }
 
-function updateSkinListGuoZhan(generalID1, generalID2) {
+export function updateSkinListGuoZhan(generalID1, generalID2) {
   document.getElementById('createSkinIframeSource').contentWindow.document.body.innerHTML = ''
   if (typeof skinMap[generalID1] != 'undefined') {
     for (let i = 0; i < skinMap[generalID1].length; i++) {
