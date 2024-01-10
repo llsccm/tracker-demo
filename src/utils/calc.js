@@ -1,4 +1,5 @@
 import { getCardNumAndSuit } from './get'
+import { drawYanJiao } from '../dom'
 
 export function calcResult() {
   combos = []
@@ -124,26 +125,7 @@ function findPairs() {
   }
   drawYanJiao(filteredPairs)
 }
-function drawYanJiao(filteredPairs) {
-  var YanJiaoResHTML = document.getElementById('iframe-source').contentWindow.document.getElementById('res')
-  YanJiaoResHTML.innerText = ''
-  for (let sebs of filteredPairs) {
-    let span = document.createElement('button')
-    span.className = 'calRes'
-    span.innerText = sebs
-    span.onmousedown = function () {
-      toClipboard(sebs)
-      span.innerText = '复制成功'
-      setTimeout(() => {
-        span.textContent = sebs
-      }, '500')
-    }
-    YanJiaoResHTML.append(span)
 
-    var br = document.createElement('br')
-    YanJiaoResHTML.append(br)
-  }
-}
 function containsStr(arr, str) {
   for (var i = 0; i < arr.length; i++) {
     if (arr[i] === str) {
@@ -196,12 +178,14 @@ export function JiZhanCal(cardNum) {
   // paidui.forEach(c => paiduiSum+=parseInt(getCardNumAndSuit(c)["cardNum"]));
   document.getElementById('iframe-source').contentWindow.document.getElementById('jizhan').innerHTML = '牌堆比' + cardNum + '大张数：' + bigger + '<br>' + '牌堆比' + cardNum + '小张数：' + smaller
 }
+
 var MiZhuCards = [10, 2, 3, 7, 6]
 var MiZhuRes
 //记录结果的位置，如果有相同则略过
 var pathArr = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 var pathSum
 var pathArrSet = new Set()
+
 // function mizhuCal(cards, index, res,sum) {
 export function MiZhuCal(arr, n) {
   pathArrSet = new Set()

@@ -327,3 +327,24 @@ export function initDragElement() {
     return null
   }
 }
+
+export function drawYanJiao(filteredPairs) {
+  var YanJiaoResHTML = document.getElementById('iframe-source').contentWindow.document.getElementById('res')
+  YanJiaoResHTML.innerText = ''
+  for (let sebs of filteredPairs) {
+    let span = document.createElement('button')
+    span.className = 'calRes'
+    span.innerText = sebs
+    span.onmousedown = function () {
+      toClipboard(sebs)
+      span.innerText = '复制成功'
+      setTimeout(() => {
+        span.textContent = sebs
+      }, '500')
+    }
+    YanJiaoResHTML.append(span)
+
+    var br = document.createElement('br')
+    YanJiaoResHTML.append(br)
+  }
+}
