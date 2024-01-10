@@ -1,6 +1,8 @@
 import { getCardNumAndSuit } from './utils/get'
 import html from './html/iframe'
 import skinHTML from './html/skin'
+import { drawMiZhu } from './dom'
+import { MiZhuCal } from './utils/calc'
 
 let iframe = null
 let closeIframe = false

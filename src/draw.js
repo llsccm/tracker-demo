@@ -38,6 +38,7 @@ export function drawRemShouPai({remShouPai}) {
     knownCardsInHandDiv.style.display = 'block'
   }
 }
+
 export function drawDingOrDi(ding, di) {
   var DingCardsDiv = document.getElementById('iframe-source').contentWindow.document.getElementById('dingCards')
   var DiCardsDiv = document.getElementById('iframe-source').contentWindow.document.getElementById('diCards')
@@ -99,6 +100,7 @@ export function drawDingOrDi(ding, di) {
     DingCardsDiv.style.display = 'block'
   }
 }
+
 export function drawMiZhu(MiZhuRes) {
   var MiZhuResHTML = document.getElementById('iframe-source').contentWindow.document.getElementById('res')
   MiZhuResHTML.innerText = ''
@@ -126,6 +128,7 @@ export function drawMiZhu(MiZhuRes) {
     }
   }
 }
+
 export function drawShouPai(shoupai) {
   var toBeAdd
   for (let i = 0; i < idOrderPre.length; i++) {

@@ -3,7 +3,7 @@ import { gameStart } from './gameStart'
 // import skinMap from './map/skinMap'
 import { getCardNumAndSuit, allCardToCurrentMode, currentModeCardType } from './utils/get'
 import { calcResult, JiZhanCal } from './utils/calc'
-import { drawShouPai, drawRemShouPai, drawDingOrDi, drawMiZhu } from './draw'
+import { drawShouPai, drawRemShouPai, drawDingOrDi } from './draw'
 import { removeCardType, addCardType, addCard, removeCard } from './zone'
 import { addFrame, addSkinFrame, updateSkinList, updateSkinListGuoZhan } from './dom'
 
@@ -81,7 +81,7 @@ if (UsedGeneralSkinIDString) {
 }
 //console.warn(UsedGeneralSkinID);
 
-var isSelectGeneral = false
+// var isSelectGeneral = false
 let userID
 let UserID
 let curUserID
