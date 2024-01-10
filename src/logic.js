@@ -1,9 +1,7 @@
 import { addCardTypeButton, clearButton, clearSuit, addQuanBian, addSuit, resetOrderContainer, hideOrderContainer } from './dom'
-// import skinMap from './map/skinMap'
 import { getCardNumAndSuit, allCardToCurrentMode, currentModeCardType } from './utils/get'
 import { calcResult, JiZhanCal } from './utils/calc'
 import { drawShouPai, drawRemShouPai, drawDingOrDi } from './draw'
-import { removeCardType, addCardType, addCard, removeCard } from './zone'
 import { addFrame, addSkinFrame, updateSkinList, updateSkinListGuoZhan } from './dom'
 
 const deckConfig = {
@@ -47,9 +45,8 @@ let gameState = {
   enableLuanJi: false,
   enableQuanBian: false,
   enableHuaMu: false,
-  knownShouPai: new Set(),
   isClickSkinSelect: false,
-  curGeneral: -1,
+  curGeneral: -1
 }
 
 let deckState = {
@@ -75,6 +72,7 @@ let deckState = {
     hongsha: 0,
     heisha: 0
   },
+  knownShouPai: new Set(),
   unknownCard: [],
   temShouPai: new Set(), //用于处理临时手牌
   remShouPai: new Set() //洗牌后剩余手牌
@@ -283,7 +281,7 @@ export function mainLogic(args) {
       for (const c of card.CardIDs) {
         deckState.shoupai[gameState.idOrder[firstID]].add(c)
       }
-      drawShouPai(deckState.shoupai)
+      drawShouPai(deckState.shoupai, gameState.idOrderPre, deckState.knownShouPai)
     } else if (className == 'PubGsCUseSpell' && card.SpellID == 781) {
       //徐氏洗牌
       deckState.paidui.forEach((element) => {
@@ -311,7 +309,7 @@ export function mainLogic(args) {
           deckState.shoupai[gameState.idOrder[seatId]].add(c)
         }
       }
-      drawShouPai(deckState.shoupai)
+      drawShouPai(deckState.shoupai, gameState.idOrderPre, deckState.knownShouPai)
     } else if (className == 'GsCRoleOptTargetNtf' && typeof Params != 'undefined' && targetSeatID != 255 && Param == 0 && card.SpellID == 3266) {
       Params = Params.slice()
         .reverse()
@@ -322,7 +320,7 @@ export function mainLogic(args) {
           console.warn('card shoupai target ' + p)
         }
       }
-      drawShouPai(deckState.shoupai)
+      drawShouPai(deckState.shoupai, gameState.idOrderPre, deckState.knownShouPai)
     } else if (className == 'GsCRoleOptTargetNtf' && typeof Params != 'undefined' && card.SpellID == 372) {
       //溃围
       // Params: (9) [5, 2, 63, 138, 60, 118, 153, 28, 20]
@@ -332,7 +330,7 @@ export function mainLogic(args) {
           deckState.shoupai[gameState.idOrder[targetSeatID]].add(Params[p])
         }
       }
-      drawShouPai(deckState.shoupai)
+      drawShouPai(deckState.shoupai, gameState.idOrderPre, deckState.knownShouPai)
     } else if (className == 'GsCRoleOptTargetNtf' && typeof Params != 'undefined' && Param == 0 && (card.SpellID == 921 || card.SpellID == 851)) {
       //神甘宁 伏间 目标角色手牌
       //Param: 0
@@ -346,7 +344,7 @@ export function mainLogic(args) {
           deckState.shoupai[gameState.idOrder[DestSeatID]].add(Params[p])
         }
       }
-      drawShouPai(deckState.shoupai)
+      drawShouPai(deckState.shoupai, gameState.idOrderPre, deckState.knownShouPai)
     } else if (className == 'GsCRoleOptTargetNtf' && typeof Params != 'undefined' && Param == 0 && (card.SpellID == 361 || card.SpellID == 774 || card.SpellID == 357 || card.SpellID == 811)) {
       //贿生 闪袭 勘破目标角色手牌
       if (typeof targetSeatID != 'undefined') {
@@ -354,7 +352,7 @@ export function mainLogic(args) {
           deckState.shoupai[gameState.idOrder[targetSeatID]].add(Params[p])
         }
       }
-      drawShouPai(deckState.shoupai)
+      drawShouPai(deckState.shoupai, gameState.idOrderPre, deckState.knownShouPai)
     } else if (className == 'GsCRoleOptTargetNtf' && typeof Params != 'undefined' && (card.SpellID == 3119 || card.SpellID == 501)) {
       //邓忠，改你妹啊
       if (typeof targetSeatID != 'undefined') {
@@ -362,7 +360,7 @@ export function mainLogic(args) {
           deckState.shoupai[gameState.idOrder[targetSeatID]].add(Params[p])
         }
       }
-      drawShouPai(deckState.shoupai)
+      drawShouPai(deckState.shoupai, gameState.idOrderPre, deckState.knownShouPai)
     } else if (className == 'PubGsCMoveCard' && typeof card.CardCount != 'undefined' && card.CardCount > 0) {
       //游戏开始后 洗牌，会从弃牌堆2丢到洗牌堆
       if (card.FromZone == 2 && card.ToZone == 9 && card.FromID == 0 && card.ToID == 0 && gameState.isGameStart) {
@@ -517,7 +515,7 @@ export function mainLogic(args) {
           addCard(card.ToID, c, card.ToZone, card.SpellID)
         }
       }
-      drawShouPai(deckState.shoupai)
+      drawShouPai(deckState.shoupai, gameState.idOrderPre, deckState.knownShouPai)
       drawDingOrDi(deckState.ding, deckState.di)
       if (deckState.remShouPai.size != 0) {
         drawRemShouPai(deckState.remShouPai)
@@ -778,6 +776,7 @@ function gameStart(cardList) {
   deckState.newShouPai = {}
   deckState.unknownCard = []
   deckState.temShouPai = new Set() //用于处理临时手牌
+  deckState.knownShouPai = new Set()
 
   gameState.idOrder = {} //key为玩家id，value为实际座位顺序
   gameState.seat = 0 //用于座位安排
@@ -800,7 +799,6 @@ function gameStart(cardList) {
   gameState.quanBian = new Set()
   gameState.enableHuaMu = false
   gameState.huaMu = new Set()
-  gameState.knownShouPai = new Set()
   gameState.isClickSkinSelect = false
   gameState.myID = -1
   gameState.curGeneral = -1

@@ -2,8 +2,7 @@ import { getCardNumAndSuit } from './utils/get'
 import allCard from './map/allCard'
 const emojiFontSize = '15px' // 可变的字体大小，可以根据需要进行调整
 
-
-export function drawRemShouPai({remShouPai}) {
+export function drawRemShouPai(remShouPai) {
   var knownCardsDiv = document.getElementById('iframe-source').contentWindow.document.getElementById('knownCards')
   var knownCardsInHandDiv = document.getElementById('iframe-source').contentWindow.document.getElementById('knownCardsInHand')
   // knownCardsDiv.innerText = '';
@@ -44,7 +43,7 @@ export function drawDingOrDi(ding, di) {
   var DiCardsDiv = document.getElementById('iframe-source').contentWindow.document.getElementById('diCards')
   DingCardsDiv.innerText = ''
   DiCardsDiv.innerText = ''
-  const cardDIV = document.createElement('div')
+  // const cardDIV = document.createElement('div')
   var dingReverse = ding.slice().reverse()
   for (const c of dingReverse) {
     var button = document.createElement('button')
@@ -129,7 +128,7 @@ export function drawMiZhu(MiZhuRes) {
   }
 }
 
-export function drawShouPai(shoupai) {
+export function drawShouPai(shoupai, idOrderPre, knownShouPai) {
   var toBeAdd
   for (let i = 0; i < idOrderPre.length; i++) {
     let seatID = (i + 1).toString()
