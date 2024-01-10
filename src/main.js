@@ -1,10 +1,11 @@
-import { mainLogic } from './mainLogic';
+import { mainLogic } from './mainLogic'
+import { skinLogic } from './skinLogic'
 const classList = ['SsCChatmsgNtf', 'GsCModifyUserseatNtf', 'MsgReconnectGame', 'MsgGamePlayCardNtf', 'PubGsCUseSpell', 'ClientHappyGetFriendHandcardRep', 'GsCRoleOptTargetNtf', 'PubGsCMoveCard', 'GsCFirstPhaseRole', 'GsCGamephaseNtf', 'PubGsCUseCard', 'ClientGeneralSkinRep', 'ClientLoginRep', 'MsgReconnectGame', 'ClientRoleGeneralStarRep', 'SmsgGameStateData']
 
 export function main() {
   let args = Array.prototype.slice.call(arguments)
   let mainInfo = {}
-  // skinLogic(args)
+  skinLogic(args)
   let className = args[0] && args[0]['className']
   if (classList.includes(className)) {
     mainInfo['className'] = args[0]['className']
@@ -35,8 +36,7 @@ export function main() {
     mainInfo['SeatID'] = args[0]['SeatID']
     mainInfo['Round'] = args[0]['Round']
     mainInfo['uid'] = args[0]['uid']
-    mainInfo['UserID'] = args["UserID"]
-
+    mainInfo['UserID'] = args['UserID']
   }
   let mainInfoToMainLogic = JSON.parse(JSON.stringify(mainInfo))
   try {

@@ -38,13 +38,13 @@ let gameState = {
   GuoZhanGeneral: [],
   myID: -1, //仅仅用于自己
   boTu: new Set(),
-  enableBoTu: false,
   luanJi: new Set(),
+  quanBian: new Set(),
+  huaMu: new Set(),
+  enableBoTu: false,
   enableLuanJi: false,
   enableQuanBian: false,
-  quanBian: new Set(),
   enableHuaMu: false,
-  huaMu: new Set(),
   unknownCard: [],
   knownShouPai: new Set(),
   isClickSkinSelect: false,
@@ -61,7 +61,7 @@ let gameState = {
 }
 let insertInd //用于插入顶/底牌堆，黄承彦
 
-var mySkin
+// var mySkin
 var account = localStorage.SGS_LASTLOGIN_ACCOUNT
 var accountUsedGeneralSkinID = account + '::UsedGeneralSkinID'
 var UsedGeneralSkinIDString = localStorage[accountUsedGeneralSkinID]
@@ -87,72 +87,72 @@ let oldGeneralID = 999 ////只有不同GeneralID才会更新skinFrame
 let GeneralID = 999
 var paiduiSum = 0 //用于计算的平均数,吉占
 
-var gameStatusMap = {}
+let gameStatusMap = {}
 let remCardCount = 0
 let currentMode = {}
 
 //cardType 基本1锦囊2装备3其他4
 let currentCardType
 var mainID
-var closeIframe = false
-var gameModeMap = {}
-var calResult = []
-var cardNumAndSuit
+
+// var gameModeMap = {}
+// var calResult = []
+// var cardNumAndSuit
 
 var b = 1562902854
 var isB = false
-var isAutoCloseEnabled = true;
+let isAutoCloseEnabled = true
 //room
 let room = {
   cardList: [],
   size: 8,
   firstSeatID: 0
 }
-var DestSeatIDs
-var DestSeatID
+// var DestSeatIDs
+let DestSeatID
 
 export function mainLogic(args) {
-  let className = args['className']
-  card.CardIDs = args['CardIDs']
-  card.CardID = args['CardID']
-  card.FromID = args['FromID']
-  card.FromZone = args['FromZone']
-  card.ToID = args['ToID']
-  card.ToZone = args['ToZone']
-  card.CardCount = args['CardCount']
-  card.DataCount = args['DataCount']
-  card.SpellID = args['SpellID'] //使用的技能
-  card.FromPosition = args['FromPosition']
-  card.ToPosition = args['ToPosition']
-  var cardCount = args['cardCount']
-  if (typeof args['CardList'] != 'undefined') {
-    room.cardList = args['CardList']
+  let { className, CardIDs, CardID, FromID, FromZone, ToID, ToZone, CardCount, DataCount, SpellID, FromPosition, ToPosition, CardList } = args
+  card.CardIDs = CardIDs
+  card.CardID = CardID
+  card.FromID = FromID
+  card.FromZone = FromZone
+  card.ToID = ToID
+  card.ToZone = ToZone
+  card.CardCount = CardCount
+  card.DataCount = DataCount
+  card.SpellID = SpellID //使用的技能
+  card.FromPosition = FromPosition
+  card.ToPosition = ToPosition
+  if (typeof CardList != 'undefined') {
+    room.cardList = CardList
   }
+
   let cardID = 0
-  var firstID = args['SeatID']
-  var Param = args['Param']
-  var Params = args['Params']
-  let ClientID = args['ClientID']
-  DestSeatIDs = args['DestSeatIDs']
-  var GeneralSkinList = args['GeneralSkinList']
-  var Infos = args['Infos']
-  var Cards = args['Cards']
-  var targetSeatID = args['targetSeatID']
-  var seatId = args['seatId']
-  var SeatID = args['SeatID']
-  var Round = args['Round']
-  var curUserID = args['curUserID']
-  var userID = args['userID']
-  var UserID = args["UserID"];
+  let { SeatID, Param, Params, DestSeatIDs, GeneralSkinList, Infos, Cards, targetSeatID, seatId, Round, curUserID, userID, UserID} = args
+  var firstID = SeatID
+  // var Param = args['Param']
+  // var Params = args['Params']
+  let ClientID = args['ClientID'] // w未使用
+  // DestSeatIDs = args['DestSeatIDs']
+  // var GeneralSkinList = args['GeneralSkinList']
+  // var Infos = args['Infos']
+  // var Cards = args['Cards']
+  // var targetSeatID = args['targetSeatID']
+  // var seatId = args['seatId']
 
-  var enableBoTu = false;
-  var enableQuanBian = false;
+  // var Round = args['Round']
+  // var curUserID = args['curUserID']
+  // var userID = args['userID']
+  // var UserID = args['UserID']
 
+  // gameState.enableBoTu = false
+  // gameState.enableQuanBian = false
 
-  if(className == 'ClientLoginRep' ){
-    userID = args["uid"];
+  if (className == 'ClientLoginRep') {
+    userID = args['uid']
     //addSkinFrame();//预先注入
-    console.warn("userID"+userID);
+    console.warn('userID' + userID)
     // if(!isFrameAdd){
     //   addFrame();
     //   var elmnt = document.getElementById('createIframe');
@@ -161,11 +161,11 @@ export function mainLogic(args) {
     // }
   }
   //enable博图
-  if(className == 'ClientGeneralSkinRep' && GeneralSkinList[0]['GeneralID'] == 306 || (curUserID == UserID && !gameStatusMap.isGuoZhanBiaoZhun && !gameStatusMap.isGuoZhanYingBian)){
-    enableBoTu = true;
+  if ((className == 'ClientGeneralSkinRep' && GeneralSkinList[0]['GeneralID'] == 306) || (curUserID == UserID && !gameStatusMap.isGuoZhanBiaoZhun && !gameStatusMap.isGuoZhanYingBian)) {
+    gameState.enableBoTu = true
   }
-  if(className == 'ClientGeneralSkinRep' && GeneralSkinList[0]['GeneralID'] == 7003 && curUserID == UserID){
-    enableQuanBian = true;
+  if (className == 'ClientGeneralSkinRep' && GeneralSkinList[0]['GeneralID'] == 7003 && curUserID == UserID) {
+    gameState.enableQuanBian = true
   }
   //博图，用于检测什么适合清空博图花色
   if (className == 'GsCGamephaseNtf' && Round == 0 && (gameState.enableBoTu || gameState.enableLuanJi || gameState.enableQuanBian)) {
@@ -187,52 +187,7 @@ export function mainLogic(args) {
 
   // 游戏开始
   if (className == 'MsgGamePlayCardNtf') {
-    gameStatusMap = {
-      isJunZhengBiaoZhun: false,
-      isJunZhengBiaoZhunShanShan: false,
-      isJunZhengYingBian: false,
-      isJunZhengYingBianShanShan: false,
-      isShenZhiShiLian: false,
-      isGuoZhanBiaoZhun: false,
-      isGuoZhanYingBian: false,
-      isDouDiZhu: false,
-      isShenWu: false,
-      isZhuGongSha: false,
-      isZhuGongShaShanShan: false,
-      isTongShuai: false,
-      isUnknown: false,
-      isHuanLeBiaoZhun: false,
-      isHuanLeBiaoZhunShanShan: false
-    }
-    if (cardCount === 161 && room.cardList[160] === 12142) {
-      gameStatusMap.isJunZhengBiaoZhunShanShan = true
-    } else if (cardCount === 161 && room.cardList[160] === 161) {
-      gameStatusMap.isJunZhengBiaoZhun = true
-    } else if (cardCount === 160 && room.cardList[159] === 160) {
-      gameStatusMap.isHuanLeBiaoZhun = true
-    } else if (cardCount === 160 && room.cardList[159] === 12142) {
-      gameStatusMap.isHuanLeBiaoZhunShanShan = true
-    } else if (cardCount === 166 && room.cardList[165] === 13005) {
-      gameStatusMap.isDouDiZhu = true
-    } else if (cardCount === 155 && room.cardList[154] === 326) {
-      gameStatusMap.isShenWu = true
-    } else if (cardCount === 110 && room.cardList[107] === 1108) {
-      gameStatusMap.isGuoZhanBiaoZhun = true
-    } else if (cardCount == 161 && room.cardList[160] == 7160) {
-      gameStatusMap.isJunZhengYingBian = true
-    } else if (cardCount == 164 && room.cardList[160] == 7160) {
-      gameStatusMap.isJunZhengYingBian = true
-    } else if (cardCount == 162 && room.cardList[1] == 201) {
-      gameStatusMap.isShenZhiShiLian = true
-    } else if (cardCount == 111 && room.cardList[110] == 20330) {
-      gameStatusMap.isGuoZhanYingBian = true
-    } else if (cardCount == 157 && room.cardList[156] == 13005) {
-      gameStatusMap.isGuoZhanYingBian = true
-    } else if (cardCount == 158 && room.cardList[157] == 13005) {
-      gameStatusMap.isZhuGongShaShanShan = true
-    } else {
-      gameStatusMap.isUnknown = true
-    }
+    gameStatusInit(CardCount)
     currentMode = allCardToCurrentMode(room.cardList)
     currentCardType = currentModeCardType(currentMode)
 
@@ -503,12 +458,14 @@ export function mainLogic(args) {
           } else {
             cardID = 0
           }
-          var FromID = card.FromID
-          var FromZone = card.FromZone
-          var ToZone = card.ToZone
-          var ToID = card.ToID
-          var FromPosition = card.FromPosition
-          var ToPosition = card.ToPosition
+          // 这里看不懂！
+          FromID = card.FromID
+          FromZone = card.FromZone
+          ToZone = card.ToZone
+          ToID = card.ToID
+          FromPosition = card.FromPosition
+          ToPosition = card.ToPosition
+          //
           if (card.FromZone == 1) {
             remCardCount--
           }
@@ -559,6 +516,51 @@ export function mainLogic(args) {
   }
 }
 
-function gameInit(){
-  //wip
+function gameStatusInit(cardCount) {
+  gameStatusMap = {
+    isJunZhengBiaoZhun: false,
+    isJunZhengBiaoZhunShanShan: false,
+    isJunZhengYingBian: false,
+    isJunZhengYingBianShanShan: false,
+    isShenZhiShiLian: false,
+    isGuoZhanBiaoZhun: false,
+    isGuoZhanYingBian: false,
+    isDouDiZhu: false,
+    isShenWu: false,
+    isZhuGongSha: false,
+    isZhuGongShaShanShan: false,
+    isTongShuai: false,
+    isUnknown: false,
+    isHuanLeBiaoZhun: false,
+    isHuanLeBiaoZhunShanShan: false
+  }
+  if (cardCount === 161 && room.cardList[160] === 12142) {
+    gameStatusMap.isJunZhengBiaoZhunShanShan = true
+  } else if (cardCount === 161 && room.cardList[160] === 161) {
+    gameStatusMap.isJunZhengBiaoZhun = true
+  } else if (cardCount === 160 && room.cardList[159] === 160) {
+    gameStatusMap.isHuanLeBiaoZhun = true
+  } else if (cardCount === 160 && room.cardList[159] === 12142) {
+    gameStatusMap.isHuanLeBiaoZhunShanShan = true
+  } else if (cardCount === 166 && room.cardList[165] === 13005) {
+    gameStatusMap.isDouDiZhu = true
+  } else if (cardCount === 155 && room.cardList[154] === 326) {
+    gameStatusMap.isShenWu = true
+  } else if (cardCount === 110 && room.cardList[107] === 1108) {
+    gameStatusMap.isGuoZhanBiaoZhun = true
+  } else if (cardCount == 161 && room.cardList[160] == 7160) {
+    gameStatusMap.isJunZhengYingBian = true
+  } else if (cardCount == 164 && room.cardList[160] == 7160) {
+    gameStatusMap.isJunZhengYingBian = true
+  } else if (cardCount == 162 && room.cardList[1] == 201) {
+    gameStatusMap.isShenZhiShiLian = true
+  } else if (cardCount == 111 && room.cardList[110] == 20330) {
+    gameStatusMap.isGuoZhanYingBian = true
+  } else if (cardCount == 157 && room.cardList[156] == 13005) {
+    gameStatusMap.isGuoZhanYingBian = true
+  } else if (cardCount == 158 && room.cardList[157] == 13005) {
+    gameStatusMap.isZhuGongShaShanShan = true
+  } else {
+    gameStatusMap.isUnknown = true
+  }
 }

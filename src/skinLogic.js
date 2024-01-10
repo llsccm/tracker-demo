@@ -1,3 +1,7 @@
+import { addFrame } from './dom'
+
+let mySkin
+
 export function skinLogic(args) {
   var GeneralSkinList = args[0] && args[0]['GeneralSkinList']
   let className = args[0] && args[0]['className']
@@ -52,9 +56,9 @@ export function skinLogic(args) {
     console.warn('userID' + userID)
     if (!isFrameAdd) {
       addFrame()
-      var elmnt = document.getElementById('createIframe')
-      buttonClick()
-      initDragElement()
+      // var elmnt = document.getElementById('createIframe')
+      // buttonClick()
+      // initDragElement()
     }
   }
 

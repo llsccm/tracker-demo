@@ -1,4 +1,9 @@
 import { getCardNumAndSuit } from './utils/get'
+import html from './html/iframe'
+import skinHTML from './html/skin'
+
+let iframe = null
+let closeIframe = false
 
 export function clearButton(type) {
   var div = document.getElementById('iframe-source').contentWindow.document.getElementById(type)
@@ -202,9 +207,11 @@ export function addFrame() {
     iframe.contentWindow.document.write(html)
     iframe.contentWindow.document.close()
   }
+  buttonClick()
+  initDragElement()
 }
 
-export function buttonClick() {
+function buttonClick() {
   document.getElementById('iframe-source').contentWindow.document.getElementById('uuid').innerText = 'id：' + userID
 
   var toggle = document.getElementById('toggle-me')
@@ -259,7 +266,7 @@ export function buttonClick() {
   }
 }
 
-export function initDragElement() {
+function initDragElement() {
   var pos1 = 0,
     pos2 = 0,
     pos3 = 0,
@@ -347,4 +354,137 @@ export function drawYanJiao(filteredPairs) {
     var br = document.createElement('br')
     YanJiaoResHTML.append(br)
   }
+}
+
+export function addSkinFrame() {
+  let createSkinIframe = document.getElementById('createSkinIframe')
+
+  if (!createSkinIframe) {
+    createSkinIframe = document.createElement('div')
+    createSkinIframe.id = 'createSkinIframe'
+    createSkinIframe.className = 'createSkinIframe'
+    createSkinIframe.style = '    display: inline-block;' + '    z-index: 10000000000;' + '    display: none;' + '    width: 680px;' + '    height:500px;' + '    position: fixed;' + '    top: 0;' + '    bottom: 0;' + '    left: 0;' + '    right: 20%;' + '    background: rgb(50,50,50);' + '    margin: auto;'
+
+    var header = document.createElement('p')
+    header.id = 'header'
+    header.className = 'header'
+    header.innerText = '请选择皮肤，选中后会自动关闭此窗口，再关闭自身的皮肤窗口即可'
+    header.style = 'style:display:inline-block;' + 'margin:1px;' + 'user-select:none;' + 'text-align:center;' + 'color: #f2de9c; ' + 'cursor: pointer'
+    var btnSkin = document.createElement('btn')
+
+    btnSkin.innerText = '×'
+    btnSkin.id = 'btnSkin'
+    btnSkin.style = 'text-align:center;' + 'color: #f2de9c;' + 'background: rgb(40,40,40);' + 'border-radius:5px;' + 'margin-left:3px;' + 'border: 1px solid rgb(212,212,162);' + 'cursor: pointer;' + 'user-select:none;' + 'background: rgb(107,30,30);'
+    header.append(btnSkin)
+    createSkinIframe.appendChild(header)
+
+    document.body.appendChild(createSkinIframe)
+
+    iframe = document.createElement('iframe')
+    iframe.style = 'border: none;' + '    width: 680px;' + '    height:475px;' + 'margin: 0px;' + 'cursor: move;'
+    iframe.id = 'createSkinIframeSource'
+    iframe.title = 'iframe'
+
+    //iframe.src = 'data:text/html;charset=utf-8,' + encodeURI(html);
+    createSkinIframe.append(iframe)
+    iframe.contentWindow.document.open()
+    iframe.contentWindow.document.write(skinHTML)
+    iframe.contentWindow.document.close()
+  }
+  //skinLogic start
+  var btnSkin = document.getElementById('btnSkin')
+  btnSkin.onmousedown = function () {
+    document.getElementById('createSkinIframe').style.display = 'none'
+  }
+  //skinLogic end
+}
+
+function updateSkinList(generalID) {
+  document.getElementById('createSkinIframeSource').contentWindow.document.body.innerHTML = ''
+  //这是原皮
+  var imgSkin = document.createElement('img')
+  imgSkin.id = 0
+  imgSkin.className = 'skinList'
+  imgSkin.classList.add(generalID)
+  imgSkin.src = 'https://web.sanguosha.com/220/h5_2/res/runtime/pc/general/seat/static/generalface_' + generalID + '.png'
+  document.getElementById('createSkinIframeSource').contentWindow.document.body.append(imgSkin)
+
+  if (typeof skinMap[generalID] != 'undefined') {
+    for (let i = 0; i < skinMap[generalID].length; i++) {
+      for (let id = 1; id <= 12; id++) {
+        var imgSkin = document.createElement('img')
+        imgSkin.id = skinMap[generalID][i] * 100 + id
+        imgSkin.className = 'skinList'
+        imgSkin.classList.add(generalID)
+        imgSkin.src = 'https://web.sanguosha.com/220/h5_2/res/runtime/pc/general/seat/static/' + imgSkin.id + '.png'
+        if (imgSkin.id != 0) {
+          document.getElementById('createSkinIframeSource').contentWindow.document.body.append(imgSkin)
+        }
+      }
+    }
+  }
+  //除了界的，没适配的皮肤在这里
+  else {
+    for (let id = 1; id <= 12; id++) {
+      var imgSkin = document.createElement('img')
+      imgSkin.id = generalID * 100 + id
+      imgSkin.className = 'skinList'
+      imgSkin.classList.add(generalID)
+      imgSkin.src = 'https://web.sanguosha.com/220/h5_2/res/runtime/pc/general/seat/static/' + imgSkin.id + '.png'
+      if (imgSkin.id != 0) {
+        document.getElementById('createSkinIframeSource').contentWindow.document.body.append(imgSkin)
+      }
+    }
+  }
+  document
+    .getElementById('createSkinIframeSource')
+    .contentWindow.document.querySelectorAll('.skinList')
+    .forEach(function (img) {
+      img.onerror = function () {
+        this.style.display = 'none'
+      }
+    })
+}
+
+function updateSkinListGuoZhan(generalID1, generalID2) {
+  document.getElementById('createSkinIframeSource').contentWindow.document.body.innerHTML = ''
+  if (typeof skinMap[generalID1] != 'undefined') {
+    for (let i = 0; i < skinMap[generalID1].length; i++) {
+      for (let id = 1; id <= 12; id++) {
+        var imgSkin = document.createElement('img')
+        imgSkin.id = skinMap[generalID1][i] * 100 + id
+        imgSkin.className = 'skinList'
+        imgSkin.classList.add(generalID1)
+        imgSkin.src = 'https://web.sanguosha.com/220/h5_2/res/runtime/pc/general/seat/static/' + imgSkin.id + '.png'
+        if (imgSkin.id != 0) {
+          document.getElementById('createSkinIframeSource').contentWindow.document.body.append(imgSkin)
+        }
+      }
+    }
+  }
+  const lineBreak = document.createElement('br')
+  document.getElementById('createSkinIframeSource').contentWindow.document.body.append(lineBreak)
+  document.getElementById('createSkinIframeSource').contentWindow.document.body.append(lineBreak)
+  if (typeof skinMap[generalID2] != 'undefined') {
+    for (let i = 0; i < skinMap[generalID2].length; i++) {
+      for (let id = 1; id <= 12; id++) {
+        var imgSkin = document.createElement('img')
+        imgSkin.id = skinMap[generalID2][i] * 100 + id
+        imgSkin.className = 'skinList'
+        imgSkin.classList.add(generalID2)
+        imgSkin.src = 'https://web.sanguosha.com/220/h5_2/res/runtime/pc/general/seat/static/' + imgSkin.id + '.png'
+        if (imgSkin.id != 0) {
+          document.getElementById('createSkinIframeSource').contentWindow.document.body.append(imgSkin)
+        }
+      }
+    }
+  }
+  document
+    .getElementById('createSkinIframeSource')
+    .contentWindow.document.querySelectorAll('.skinList')
+    .forEach(function (img) {
+      img.onerror = function () {
+        this.style.display = 'none'
+      }
+    })
 }
