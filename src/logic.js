@@ -26,7 +26,33 @@ let mySkin
 let card = {}
 let disableSkinLogic = true
 let gameState = {
+  seat: 0, //用于座位安排
   isFirstTime: true, //第一次不会弹出skin窗口，只有oldGeneralID != GeneralID 时（新一局游戏）， 才会 isFirstTime = true；新一局游戏开始重置
+  isGameStart: false,
+  isSeatOrder: false, //座位是否安排好了
+  isFrameAdd: false,
+  idOrder: {}, //key为玩家id，value为实际座位顺序
+  idOrderPre: [], //按顺序存储idOrder
+  idOrderPreSet: new Set(), //按顺序存储idOrder
+  isDuanXian: false,
+  isDiMeng: false, //缔盟，清忠，等手牌全给情况
+  mySeatID: new Set(), // 用于糜竺，可能包括不仅仅两个人的
+  GuoZhanGeneral: [],
+  myID: -1, //仅仅用于自己
+  boTu: new Set(),
+  luanJi: new Set(),
+  quanBian: new Set(),
+  huaMu: new Set(),
+  enableBoTu: false,
+  enableLuanJi: false,
+  enableQuanBian: false,
+  enableHuaMu: false,
+  knownShouPai: new Set(),
+  isClickSkinSelect: false,
+  curGeneral: -1,
+}
+
+let deckState = {
   paidui: new Set(), //, 别人摸未知牌不会改变,自己mainID摸牌会减少的牌,场上有明牌都会被移出,此牌堆包括别人手牌
   qipai: new Set(), //zone2 弃牌
   chuli: new Set(), //zone3 处理区
@@ -40,32 +66,6 @@ let gameState = {
   zone10: new Set(),
   ding: [],
   di: [],
-  seat: 0, //用于座位安排
-  isGameStart: false,
-  isSeatOrder: false, //座位是否安排好了
-  isFrameAdd: false,
-  idOrder: {}, //key为玩家id，value为实际座位顺序
-  idOrderPre: [], //按顺序存储idOrder
-  idOrderPreSet: new Set(), //按顺序存储idOrder
-  isDuanXian: false,
-  remShouPai: new Set(), //洗牌后剩余手牌
-  temShouPai: new Set(), //用于处理临时手牌
-  isDiMeng: false, //缔盟，清忠，等手牌全给情况
-  mySeatID: new Set(), // 用于糜竺，可能包括不仅仅两个人的
-  GuoZhanGeneral: [],
-  myID: -1, //仅仅用于自己
-  boTu: new Set(),
-  luanJi: new Set(),
-  quanBian: new Set(),
-  huaMu: new Set(),
-  enableBoTu: false,
-  enableLuanJi: false,
-  enableQuanBian: false,
-  enableHuaMu: false,
-  unknownCard: [],
-  knownShouPai: new Set(),
-  isClickSkinSelect: false,
-  curGeneral: -1,
   suits: {
     diamond: 0,
     spade: 0,
@@ -74,8 +74,12 @@ let gameState = {
     spade2_9: 0,
     hongsha: 0,
     heisha: 0
-  }
+  },
+  unknownCard: [],
+  temShouPai: new Set(), //用于处理临时手牌
+  remShouPai: new Set() //洗牌后剩余手牌
 }
+
 let insertInd //用于插入顶/底牌堆，黄承彦
 
 // var mySkin
@@ -247,15 +251,15 @@ export function mainLogic(args) {
         }
         let ind = gameState.idOrderPre.indexOf(room.firstSeatID)
         for (let i = 0; i < gameState.idOrderPre.length; i++) {
-          gameState.newIdOrder[gameState.idOrderPre[ind % gameState.idOrderPre.length]] = gameState.seat
-          gameState.newShouPai[gameState.seat] = gameState.shoupai[gameState.idOrderPre[ind % gameState.idOrderPre.length]]
+          deckState.newIdOrder[gameState.idOrderPre[ind % gameState.idOrderPre.length]] = gameState.seat
+          deckState.newShouPai[gameState.seat] = deckState.shoupai[gameState.idOrderPre[ind % gameState.idOrderPre.length]]
           gameState.seat++
           ind++
         }
-        gameState.idOrder = gameState.newIdOrder
-        gameState.shoupai = gameState.newShouPai
+        gameState.idOrder = deckState.newIdOrder
+        deckState.shoupai = deckState.newShouPai
         gameState.isSeatOrder = true
-        console.warn('card reOrder shoupai: ' + JSON.stringify(gameState.shoupai))
+        console.warn('card reOrder shoupai: ' + JSON.stringify(deckState.shoupai))
         console.warn('card reOrder seat info: ' + JSON.stringify(gameState.idOrder))
       }
     }
@@ -277,17 +281,17 @@ export function mainLogic(args) {
     }
     if (className == 'PubGsCUseSpell' && card.SpellID == 3157 && card.CardIDs.length != 0) {
       for (const c of card.CardIDs) {
-        gameState.shoupai[gameState.idOrder[firstID]].add(c)
+        deckState.shoupai[gameState.idOrder[firstID]].add(c)
       }
-      drawShouPai(gameState.shoupai)
+      drawShouPai(deckState.shoupai)
     } else if (className == 'PubGsCUseSpell' && card.SpellID == 781) {
       //徐氏洗牌
-      gameState.paidui.forEach((element) => {
-        gameState.qipai.add(element)
+      deckState.paidui.forEach((element) => {
+        deckState.qipai.add(element)
       })
-      gameState.paidui = new Set()
-      gameState.ding = []
-      gameState.di = []
+      deckState.paidui = new Set()
+      deckState.ding = []
+      deckState.di = []
     }
 
     if (className == 'PubGsCUseCard' && gameState.myID == SeatID && gameState.enableQuanBian) {
@@ -304,31 +308,31 @@ export function mainLogic(args) {
       //什么傻叉昭然，用的欢乐成双的class不用欢乐成双的ui和代码逻辑
       for (const c of Cards) {
         if (typeof gameState.idOrder[seatId] != 'undefined') {
-          gameState.shoupai[gameState.idOrder[seatId]].add(c)
+          deckState.shoupai[gameState.idOrder[seatId]].add(c)
         }
       }
-      drawShouPai(gameState.shoupai)
+      drawShouPai(deckState.shoupai)
     } else if (className == 'GsCRoleOptTargetNtf' && typeof Params != 'undefined' && targetSeatID != 255 && Param == 0 && card.SpellID == 3266) {
       Params = Params.slice()
         .reverse()
         .filter((_, index) => (index + 1) % 3 === 0)
       if (typeof targetSeatID != 'undefined') {
         for (const p of Params) {
-          gameState.shoupai[gameState.idOrder[targetSeatID]].add(p)
+          deckState.shoupai[gameState.idOrder[targetSeatID]].add(p)
           console.warn('card shoupai target ' + p)
         }
       }
-      drawShouPai(gameState.shoupai)
+      drawShouPai(deckState.shoupai)
     } else if (className == 'GsCRoleOptTargetNtf' && typeof Params != 'undefined' && card.SpellID == 372) {
       //溃围
       // Params: (9) [5, 2, 63, 138, 60, 118, 153, 28, 20]
 
       if (typeof targetSeatID != 'undefined') {
         for (let p = Params.length - 1; p >= 0; p--) {
-          gameState.shoupai[gameState.idOrder[targetSeatID]].add(Params[p])
+          deckState.shoupai[gameState.idOrder[targetSeatID]].add(Params[p])
         }
       }
-      drawShouPai(gameState.shoupai)
+      drawShouPai(deckState.shoupai)
     } else if (className == 'GsCRoleOptTargetNtf' && typeof Params != 'undefined' && Param == 0 && (card.SpellID == 921 || card.SpellID == 851)) {
       //神甘宁 伏间 目标角色手牌
       //Param: 0
@@ -339,40 +343,40 @@ export function mainLogic(args) {
       // Timeout: 10
       if (typeof DestSeatID != 'undefined') {
         for (const p in Params) {
-          gameState.shoupai[gameState.idOrder[DestSeatID]].add(Params[p])
+          deckState.shoupai[gameState.idOrder[DestSeatID]].add(Params[p])
         }
       }
-      drawShouPai(gameState.shoupai)
+      drawShouPai(deckState.shoupai)
     } else if (className == 'GsCRoleOptTargetNtf' && typeof Params != 'undefined' && Param == 0 && (card.SpellID == 361 || card.SpellID == 774 || card.SpellID == 357 || card.SpellID == 811)) {
       //贿生 闪袭 勘破目标角色手牌
       if (typeof targetSeatID != 'undefined') {
         for (let p = Params.length - 1; p >= 0; p--) {
-          gameState.shoupai[gameState.idOrder[targetSeatID]].add(Params[p])
+          deckState.shoupai[gameState.idOrder[targetSeatID]].add(Params[p])
         }
       }
-      drawShouPai(gameState.shoupai)
+      drawShouPai(deckState.shoupai)
     } else if (className == 'GsCRoleOptTargetNtf' && typeof Params != 'undefined' && (card.SpellID == 3119 || card.SpellID == 501)) {
       //邓忠，改你妹啊
       if (typeof targetSeatID != 'undefined') {
         for (let p = Params.length - 1; p >= 0; p--) {
-          gameState.shoupai[gameState.idOrder[targetSeatID]].add(Params[p])
+          deckState.shoupai[gameState.idOrder[targetSeatID]].add(Params[p])
         }
       }
-      drawShouPai(gameState.shoupai)
+      drawShouPai(deckState.shoupai)
     } else if (className == 'PubGsCMoveCard' && typeof card.CardCount != 'undefined' && card.CardCount > 0) {
       //游戏开始后 洗牌，会从弃牌堆2丢到洗牌堆
       if (card.FromZone == 2 && card.ToZone == 9 && card.FromID == 0 && card.ToID == 0 && gameState.isGameStart) {
-        gameState.ding = []
-        gameState.di = []
+        deckState.ding = []
+        deckState.di = []
         remCardCount = card.CardCount
-        gameState.remShouPai = gameState.paidui
-        drawRemShouPai(gameState.remShouPai)
-        gameState.paidui = gameState.qipai
-        gameState.qipai = new Set()
+        deckState.remShouPai = deckState.paidui
+        drawRemShouPai(deckState.remShouPai)
+        deckState.paidui = deckState.qipai
+        deckState.qipai = new Set()
         for (const cid of room.cardList) {
           removeCardType(cid)
         }
-        gameState.suits = {
+        deckState.suits = {
           diamond: 0,
           spade: 0,
           heart: 0,
@@ -381,7 +385,7 @@ export function mainLogic(args) {
           hongsha: 0,
           heisha: 0
         }
-        gameState.paidui.forEach((element) => {
+        deckState.paidui.forEach((element) => {
           addCardType(element)
         })
       }
@@ -398,7 +402,7 @@ export function mainLogic(args) {
       else if (card.ToZone == 5 && card.FromID == 255 && card.FromZone == 1 && !gameState.isGameStart) {
         //重复用手气卡不会添加 但是手牌会更新
         console.warn('游戏开始,系统发牌/使用手气卡')
-        console.warn('card shouqika/fapai shoupai[id]' + JSON.stringify(gameState.shoupai))
+        console.warn('card shouqika/fapai shoupai[id]' + JSON.stringify(deckState.shoupai))
         remCardCount -= card.CardCount
         if (!gameState.idOrderPreSet.has(card.ToID)) {
           gameState.idOrderPreSet.add(card.ToID)
@@ -416,24 +420,24 @@ export function mainLogic(args) {
           if (card.CardIDs.length != 0) {
             cardID = card.CardIDs[i]
             const targetID = gameState.isSeatOrder ? gameState.idOrder[card.ToID] : card.ToID
-            gameState.shoupai[targetID].add(cardID)
+            deckState.shoupai[targetID].add(cardID)
             removeCardType(cardID)
-            gameState.paidui.delete(cardID)
+            deckState.paidui.delete(cardID)
           }
         }
       }
       //手气卡丢牌
       else if (card.FromZone == 5 && card.ToZone == 1 && card.ToID == 0 && !gameState.isGameStart) {
         remCardCount += card.CardCount
-        gameState.shoupai[card.FromID] = new Set()
+        deckState.shoupai[card.FromID] = new Set()
         for (let i = 0; i < card.CardCount; i++) {
           if (card.CardIDs.length != 0) {
             cardID = card.CardIDs[i]
           }
           addCardType(cardID)
-          gameState.paidui.add(cardID)
+          deckState.paidui.add(cardID)
         }
-        console.warn('card 手气卡丢牌 ' + JSON.stringify(gameState.shoupai))
+        console.warn('card 手气卡丢牌 ' + JSON.stringify(deckState.shoupai))
       }
       //神武先丢一张装备牌
       else if (card.FromID == 255 && card.FromZone == 1 && card.ToZone == 12 && card.ToID == 255 && !gameState.isGameStart) {
@@ -456,9 +460,9 @@ export function mainLogic(args) {
           //只需要换一次，清忠缔盟会有两次，第一次赋值之后就不需要再换了
           gameState.isDiMeng = !gameState.isDiMeng
           if (gameState.isDiMeng) {
-            gameState.temShouPai = gameState.shoupai[gameState.idOrder[card.ToID]]
-            gameState.shoupai[gameState.idOrder[card.ToID]] = gameState.shoupai[gameState.idOrder[card.FromID]]
-            gameState.shoupai[gameState.idOrder[card.FromID]] = gameState.temShouPai
+            deckState.temShouPai = deckState.shoupai[gameState.idOrder[card.ToID]]
+            deckState.shoupai[gameState.idOrder[card.ToID]] = deckState.shoupai[gameState.idOrder[card.FromID]]
+            deckState.shoupai[gameState.idOrder[card.FromID]] = deckState.temShouPai
           }
         }
 
@@ -484,19 +488,19 @@ export function mainLogic(args) {
           }
           //从牌堆出发，到其他区域，判断顶/底
           //从顶摸牌 已经到底了
-          if (FromID == 255 && FromZone == 1 && FromPosition == 65280 && gameState.di.length != 0 && remCardCount == gameState.di.length) {
-            gameState.ding = gameState.di.reverse()
-            gameState.di = []
+          if (FromID == 255 && FromZone == 1 && FromPosition == 65280 && deckState.di.length != 0 && remCardCount == deckState.di.length) {
+            deckState.ding = deckState.di.reverse()
+            deckState.di = []
           }
           //顶
-          if (FromID == 255 && FromZone == 1 && FromPosition == 65280 && gameState.ding.length != 0 && cardID == 0) {
-            cardID = gameState.ding.pop()
+          if (FromID == 255 && FromZone == 1 && FromPosition == 65280 && deckState.ding.length != 0 && cardID == 0) {
+            cardID = deckState.ding.pop()
             console.warn('card 顶 pop ' + cardID)
           }
 
           //底
-          if (FromID == 255 && FromZone == 1 && FromPosition == 0 && gameState.di.length != 0 && cardID == 0) {
-            cardID = gameState.di.pop()
+          if (FromID == 255 && FromZone == 1 && FromPosition == 0 && deckState.di.length != 0 && cardID == 0) {
+            cardID = deckState.di.pop()
             console.warn('card 底 pop ' + cardID)
           }
           removeCard(FromID, cardID, FromZone, FromPosition)
@@ -508,15 +512,15 @@ export function mainLogic(args) {
       }
       //行殇
       if (typeof card.SpellID != 'undefined' && card.SpellID == 105) {
-        for (const c of gameState.shoupai[gameState.idOrder[card.FromID]]) {
+        for (const c of deckState.shoupai[gameState.idOrder[card.FromID]]) {
           removeCard(card.FromID, c, card.FromZone, card.FromPosition)
           addCard(card.ToID, c, card.ToZone, card.SpellID)
         }
       }
-      drawShouPai(gameState.shoupai)
-      drawDingOrDi(gameState.ding, gameState.di)
-      if (gameState.remShouPai.size != 0) {
-        drawRemShouPai(gameState.remShouPai)
+      drawShouPai(deckState.shoupai)
+      drawDingOrDi(deckState.ding, deckState.di)
+      if (deckState.remShouPai.size != 0) {
+        drawRemShouPai(deckState.remShouPai)
       } else {
         document.getElementById('iframe-source').contentWindow.document.getElementById('knownCards').innerText = ''
         document.getElementById('iframe-source').contentWindow.document.getElementById('knownCardsInHand').style.display = 'none'
@@ -731,7 +735,7 @@ export function skinLogic(args) {
 }
 
 function gameStart(cardList) {
-  let suits = {
+  deckState.suits = {
     diamond: 0,
     spade: 0,
     heart: 0,
@@ -744,47 +748,46 @@ function gameStart(cardList) {
     let seatID = (i + 1).toString()
     document.getElementById('iframe-source').contentWindow.document.getElementById(seatID).innerHTML = ''
   }
-  const paidui = new Set()
+  deckState.paidui = new Set()
   for (const cid of cardList) {
-    paidui.add(cid)
+    deckState.paidui.add(cid)
   }
   //全部区域清空,牌堆回复张
-  var currentDeckConfig
   // 找到第一个为 true 的状态
   for (let key in deckConfig) {
     if (gameStatusMap[key]) {
-      currentDeckConfig = deckConfig[key]
+      deckState.suits = deckConfig[key]
       //TODO
-      suits = currentDeckConfig
       break
     }
   }
-  document.getElementById('iframe-source').contentWindow.document.getElementById('nav1').innerHTML = '<b>当前牌堆：' + currentDeckConfig.label + '</b>'
+  document.getElementById('iframe-source').contentWindow.document.getElementById('nav1').innerHTML = '<b>当前牌堆：' + deckState.suits.label + '</b>'
 
-  gameState.qipai = new Set() //zone2 弃牌
-  gameState.chuli = new Set() //zone3 处理区
-  gameState.biaoji = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] } //key为玩家id，value为zone4 标记区
-  gameState.shoupai = { 0: new Set(), 1: new Set(), 2: new Set(), 3: new Set(), 4: new Set(), 5: new Set(), 6: new Set(), 7: new Set() } //key为seat id而不是id，value为 zone5 手牌区
-  gameState.zhuangbei = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] } //key为玩家id，value为zone6 装备区
-  gameState.panding = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] } //key为玩家id，value为zone7 判定区
-  gameState.jineng = new Set() //观星询询会会出现 zone8
-  gameState.zone10 = new Set() //祈禳甘露 zone 10
-  gameState.ding = []
-  gameState.di = []
+  deckState.qipai = new Set() //zone2 弃牌
+  deckState.chuli = new Set() //zone3 处理区
+  deckState.biaoji = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] } //key为玩家id，value为zone4 标记区
+  deckState.shoupai = { 0: new Set(), 1: new Set(), 2: new Set(), 3: new Set(), 4: new Set(), 5: new Set(), 6: new Set(), 7: new Set() } //key为seat id而不是id，value为 zone5 手牌区
+  deckState.zhuangbei = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] } //key为玩家id，value为zone6 装备区
+  deckState.panding = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] } //key为玩家id，value为zone7 判定区
+  deckState.jineng = new Set() //观星询询会会出现 zone8
+  deckState.zone10 = new Set() //祈禳甘露 zone 10
+  deckState.ding = []
+  deckState.di = []
+  deckState.remShouPai = new Set()
+  deckState.newIdOrder = {}
+  deckState.newShouPai = {}
+  deckState.unknownCard = []
+  deckState.temShouPai = new Set() //用于处理临时手牌
+
   gameState.idOrder = {} //key为玩家id，value为实际座位顺序
   gameState.seat = 0 //用于座位安排
   gameState.isGameStart = false
   //cardType 基本1锦囊2装备3其他4
   gameState.isSeatOrder = false //座位是否安排好了
   gameState.isFrameAdd = false
-  gameState.newIdOrder = {}
-  gameState.newShouPai = {}
   gameState.idOrderPreSet = new Set()
   gameState.idOrderPre = []
   gameState.isDuanXian = false
-  gameState.remShouPai = new Set()
-
-  gameState.temShouPai = new Set() //用于处理临时手牌
   gameState.isDiMeng = false //缔盟
   gameState.mySeatID = new Set() //用于计算糜竺13点，自己的位置
   gameState.isFirstTime = true
@@ -797,10 +800,371 @@ function gameStart(cardList) {
   gameState.quanBian = new Set()
   gameState.enableHuaMu = false
   gameState.huaMu = new Set()
-  gameState.unknownCard = []
   gameState.knownShouPai = new Set()
   gameState.isClickSkinSelect = false
   gameState.myID = -1
   gameState.curGeneral = -1
   clearSuit()
+}
+
+function addCard(id, cardID, zone, ToPosition, SpellID) {
+  //观星询询翻回牌堆,牌堆增加,cardType增加
+  //65280 丢到牌堆顶
+  if (zone == 1 && id == 255 && ToPosition == 65280 && cardID != 4400 && cardID != 4401 && SpellID != 3208 && SpellID != 3266) {
+    deckState.paidui.add(cardID)
+    addCardType(cardID)
+    deckState.ding.push(cardID)
+    console.warn('card ding ' + ding)
+  }
+  //0 丢到牌堆底
+  else if (zone == 1 && id == 255 && ToPosition == 0 && SpellID != 3218) {
+    deckState.paidui.add(cardID)
+    addCardType(cardID)
+    deckState.di.push(cardID)
+    console.warn('card di ' + di)
+  }
+  //黄承彦技能
+  // else if (zone == 1 && id == 255 && (SpellID == 987)) {
+  //     paidui.add(cardID);
+  //     addCardType(cardID);
+  //     ding.splice(insertInd, 0, cardID);
+  //     // ding.reverse();
+  //     console.warn("card ding 黄承彦 "+ding + " "+insertInd);
+  // }
+  //用手气卡把手牌丢回给牌堆
+  else if (zone == 1 && id == 0) {
+    addCardType(cardID)
+  } else if (zone == 2) {
+    deckState.qipai.add(cardID)
+    if (deckState.paidui.delete(cardID)) {
+      removeCardType(cardID)
+    }
+    deckState.remShouPai.delete(cardID)
+    //吕蒙博图
+    //console.warn(getCardNumAndSuit(cardID)["cardSuit"])
+    if (enableBoTu) {
+      addSuit(cardID)
+    }
+  } else if (zone == 3) {
+    deckState.chuli.add(cardID)
+    if (deckState.paidui.delete(cardID)) {
+      removeCardType(cardID)
+    }
+    deckState.remShouPai.delete(cardID)
+  } else if (zone == 4) {
+    biaoji[id].push(cardID)
+    if (deckState.paidui.delete(cardID)) {
+      removeCardType(cardID)
+    }
+    deckState.remShouPai.delete(cardID)
+  } else if (zone == 5) {
+    //周妃/徐盛
+    if (SpellID == 414 || SpellID == 3178) {
+      cardID = deckState.unknownCard.splice(-1, 1)[0]
+    }
+    if (typeof cardID != 'undefined' && typeof shoupai[idOrder[id]] != 'undefined') {
+      gameState.isDuanXian = false
+      shoupai[idOrder[id]].add(cardID)
+      if (deckState.paidui.delete(cardID)) {
+        removeCardType(cardID)
+      }
+    } else {
+      gameState.isDuanXian = true
+      console.warn('duanxian' + zone + cardID)
+    }
+    deckState.remShouPai.delete(cardID)
+  } else if (zone == 6) {
+    zhuangbei[id].push(cardID)
+    if (deckState.paidui.delete(cardID)) {
+      removeCardType(cardID)
+    }
+    deckState.remShouPai.delete(cardID)
+  } else if (zone == 7) {
+    panding[id].push(cardID)
+    if (deckState.paidui.delete(cardID)) {
+      removeCardType(cardID)
+    }
+    deckState.remShouPai.delete(cardID)
+  } else if (zone == 8) {
+    deckState.jineng.add(cardID)
+    if (deckState.paidui.delete(cardID)) {
+      removeCardType(cardID)
+    }
+    deckState.remShouPai.delete(cardID)
+  } else if (zone == 9) {
+    return '洗牌'
+  } else if (zone == 10) {
+    deckState.zone10.add(cardID)
+    if (deckState.paidui.delete(cardID)) {
+      removeCardType(cardID)
+    }
+    deckState.remShouPai.delete(cardID)
+  } else {
+    console.warn('card.ToZone: ' + zone + ' id: ' + id + 'cardID' + cardID)
+  }
+  //出现在别的区域，清除此牌
+  if (zone != 5) {
+    for (let i = 0; i < gameState.idOrderPre.length; i++) {
+      shoupai[i].delete(cardID)
+    }
+  }
+}
+//FromZone
+function removeCard(id, cardID, zone, FromPosition) {
+  //id = 0,zone 1 游戏开始发牌
+  if (zone == 1 && id == 0) {
+    return '游戏开始发牌'
+  }
+  //破黄承彦 记录index 用于导入这张牌到ding 伏间
+  else if (zone == 0 && id == 0 && FromPosition == 0) {
+    let index = deckState.ding.indexOf(cardID)
+    if (index != -1) {
+      insertInd = index
+    }
+  }
+  //系统直接从牌堆发装备--绝响
+  //从牌堆发牌,牌堆删除这个id,cardType减少
+  // 从牌堆顶发牌
+  else if (zone == 1 && id == 255 && FromPosition == 65280) {
+    if (deckState.paidui.delete(cardID)) {
+      removeCardType(cardID)
+    }
+    if (cardID != 0 && deckState.ding.indexOf(cardID) != -1) {
+      deckState.ding.splice(deckState.ding.indexOf(cardID), 1)
+    } else if (deckState.ding.indexOf(cardID) == -1 && deckState.ding.indexOf(0) != -1) {
+      deckState.ding.splice(deckState.ding.indexOf(0), 1)
+    }
+  } else if (zone == 1 && id == 255 && FromPosition == 0) {
+    if (deckState.paidui.delete(cardID)) {
+      removeCardType(cardID)
+    }
+    if (cardID != 0 && deckState.di.indexOf(cardID) != -1) {
+      deckState.di.splice(deckState.di.indexOf(cardID), 1)
+    } else if (deckState.di.indexOf(cardID) == -1 && deckState.di.indexOf(0) != -1) {
+      deckState.di.splice(deckState.di.indexOf(0), 1)
+    }
+  }
+  // 猜测65282是处理区
+  else if (zone == 1 && id == 255 && FromPosition == 65282) {
+    if (deckState.paidui.delete(cardID)) {
+      removeCardType(cardID)
+    }
+    if (cardID != 0) {
+      let index = deckState.ding.indexOf(cardID)
+      if (index != -1) {
+        deckState.ding.splice(index, 1)
+        insertInd = index
+      } else if (index == -1 && deckState.ding.indexOf(0) != -1) {
+        deckState.ding.splice(index, 1)
+        insertInd = -1
+      }
+    }
+  }
+  //从弃牌堆丢牌
+  else if (zone == 2) {
+    deckState.qipai.delete(cardID)
+    if (deckState.paidui.delete(cardID)) {
+      removeCardType(cardID)
+    }
+  }
+  //从处理区丢牌
+  else if (zone == 3) {
+    deckState.chuli.delete(cardID)
+    if (deckState.paidui.delete(cardID)) {
+      removeCardType(cardID)
+    }
+  }
+  //从标记区丢牌
+  else if (zone == 4) {
+    if (typeof biaoji[id] != 'undefined') {
+      gameState.isDuanXian = false
+      if (deckState.paidui.delete(cardID)) {
+        removeCardType(cardID)
+      }
+      let index = biaoji[id].indexOf(cardID)
+      if (index == -1) {
+        cardID = 0
+        index = biaoji[id].indexOf(cardID)
+      }
+      deckState.unknownCard.push(biaoji[id].splice(index, 1)[0])
+    } else {
+      gameState.isDuanXian = true
+      console.warn('duanxian' + zone + cardID)
+    }
+  } else if (zone == 5) {
+    if (typeof shoupai[idOrder[id]] != 'undefined') {
+      gameState.isDuanXian = false
+
+      for (let i = 0; i < gameState.idOrderPre.length; i++) {
+        shoupai[i].delete(cardID)
+      }
+      if (deckState.paidui.delete(cardID)) {
+        removeCardType(cardID)
+      }
+    } else {
+      gameState.isDuanXian = true
+      console.warn('duanxian' + zone + cardID)
+    }
+  }
+  //装备区丢牌
+  else if (zone == 6) {
+    if (typeof zhuangbei[id] != 'undefined') {
+      gameState.isDuanXian = false
+      let index = zhuangbei[id].indexOf(cardID)
+      if (index == -1) {
+        let cardID = 0
+        index = zhuangbei[id].indexOf(cardID)
+      }
+      zhuangbei[id].splice(index, 1)
+      if (deckState.paidui.delete(cardID)) {
+        removeCardType(cardID)
+      }
+    } else {
+      gameState.isDuanXian = true
+      console.warn('duanxian' + zone + cardID)
+    }
+  }
+  //判定
+  else if (zone == 7) {
+    if (typeof panding[id] != 'undefined') {
+      let index = panding[id].indexOf(cardID)
+      if (index == -1) {
+        let cardID = 0
+        index = panding[id].indexOf(cardID)
+      }
+      panding[id].splice(index, 1)
+      if (deckState.paidui.delete(cardID)) {
+        removeCardType(cardID)
+      }
+    } else {
+      gameState.isDuanXian = true
+      console.warn('duanxian' + zone + cardID)
+    }
+  } else if (zone == 8) {
+    deckState.jineng.delete(cardID)
+    if (paidui.delete(cardID)) {
+      removeCardType(cardID)
+    }
+  } else if (zone == 9) {
+    return '洗牌'
+  } else if (zone == 10) {
+    deckState.zone10.delete(cardID)
+    if (deckState.paidui.delete(cardID)) {
+      removeCardType(cardID)
+    }
+  } else {
+    console.warn('card.remove: ' + zone + ' id: ' + id + 'cardID' + cardID)
+  }
+  deckState.remShouPai.delete(cardID)
+  // return cardID;
+}
+
+function removeCardType(cardID) {
+  if (cardID != 0 && room.cardList.includes(cardID)) {
+    console.warn('card type remove: ' + cardID + currentMode[cardID]['name'] + ' ' + JSON.stringify(getCardNumAndSuit(cardID)))
+    if (typeof currentCardType[currentMode[cardID]['name']] != 'undefined') {
+      let n = currentCardType[currentMode[cardID]['name']]['cardNum']
+      if (n > 0) {
+        n--
+        currentCardType[currentMode[cardID]['name']]['cardNum'] = n
+        if (n == 1) {
+          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).disabled = false
+          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).innerText = currentMode[cardID]['name']
+        } else if (n == 0) {
+          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).innerText = currentMode[cardID]['name']
+          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).disabled = true
+        } else {
+          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).innerText = n + currentMode[cardID]['name']
+          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).disabled = false
+        }
+      }
+      if (getCardNumAndSuit(cardID)['cardSuit'] == '♦') {
+        deckState.suits.diamond--
+      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣') {
+        deckState.suits.club--
+      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠') {
+        deckState.suits.spade--
+      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥') {
+        deckState.suits.heart--
+      }
+      if ((getCardNumAndSuit(cardID)['cardSuit'] == '♥' || getCardNumAndSuit(cardID)['cardSuit'] == '♦') && (currentMode[cardID]['name'] == '火杀' || currentMode[cardID]['name'] == '雷杀' || currentMode[cardID]['name'] == '杀')) {
+        deckState.suits.hongsha--
+      } else if ((getCardNumAndSuit(cardID)['cardSuit'] == '♣' || getCardNumAndSuit(cardID)['cardSuit'] == '♠') && (currentMode[cardID]['name'] == '火杀' || currentMode[cardID]['name'] == '雷杀' || currentMode[cardID]['name'] == '杀')) {
+        deckState.suits.heisha--
+      }
+      if (deckState.suits.diamond < 0) {
+        deckState.suits.diamond = 0
+      } else if (deckState.suits.heart < 0) {
+        deckState.suits.heart = 0
+      } else if (deckState.suits.club < 0) {
+        deckState.suits.club = 0
+      } else if (deckState.suits.diamond < 0) {
+        deckState.suits.diamond = 0
+      } else if (deckState.suits.spade < 0) {
+        deckState.suits.spade = 0
+      } else if (deckState.suits.hongsha < 0) {
+        deckState.suits.hongsha = 0
+      } else if (deckState.suits.heisha < 0) {
+        deckState.suits.heisha = 0
+      } else if (deckState.suits.diamond < 0) {
+        deckState.suits.diamond = 0
+      }
+
+      document.getElementById('iframe-source').contentWindow.document.getElementById('heart').innerText = '♥红桃 × ' + deckState.suits.heart
+      document.getElementById('iframe-source').contentWindow.document.getElementById('club').innerText = '♣梅花 × ' + deckState.suits.club
+      document.getElementById('iframe-source').contentWindow.document.getElementById('spade').innerText = '♠黑桃 × ' + deckState.suits.spade
+      document.getElementById('iframe-source').contentWindow.document.getElementById('diamond').innerText = '♦方片 × ' + deckState.suits.diamond
+      // document.getElementById('iframe-source').contentWindow.document.getElementById("shandian").innerText ="♠黑桃2~9 概率:"+ Math.round((spade2_9 / paidui.size) * 100)+'%';
+      document.getElementById('iframe-source').contentWindow.document.getElementById('hongsha').innerText = '红杀 × ' + deckState.suits.hongsha
+      document.getElementById('iframe-source').contentWindow.document.getElementById('heisha').innerText = '黑杀 × ' + deckState.suits.heisha
+    }
+  }
+}
+
+function addCardType(cardID) {
+  if (cardID != 0 && room.cardList.includes(cardID)) {
+    //console.warn("card type add: " + cardID + currentMode[cardID]["name"] + " " + JSON.stringify(getCardNumAndSuit(cardID)));
+    if (typeof currentCardType[currentMode[cardID]['name']] != 'undefined') {
+      let n = currentCardType[currentMode[cardID]['name']]['cardNum']
+      if (n >= 0) {
+        n++
+        currentCardType[currentMode[cardID]['name']]['cardNum'] = n
+        if (n == 1) {
+          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).disabled = false
+          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).innerText = currentMode[cardID]['name']
+        } else if (n == 0) {
+          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).innerText = currentMode[cardID]['name']
+          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).disabled = true
+        } else {
+          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).innerText = n + currentMode[cardID]['name']
+          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).disabled = false
+        }
+      }
+      if (getCardNumAndSuit(cardID)['cardSuit'] == '♦') {
+        deckState.suits.diamond++
+      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣') {
+        deckState.suits.club++
+      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠') {
+        deckState.suits.spade++
+      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥') {
+        deckState.suits.heart++
+      }
+      if ((getCardNumAndSuit(cardID)['cardSuit'] == '♥' || getCardNumAndSuit(cardID)['cardSuit'] == '♦') && (currentMode[cardID]['name'] == '火杀' || currentMode[cardID]['name'] == '雷杀' || currentMode[cardID]['name'] == '杀')) {
+        deckState.suits.hongsha++
+      } else if ((getCardNumAndSuit(cardID)['cardSuit'] == '♣' || getCardNumAndSuit(cardID)['cardSuit'] == '♠') && (currentMode[cardID]['name'] == '火杀' || currentMode[cardID]['name'] == '雷杀' || currentMode[cardID]['name'] == '杀')) {
+        deckState.suits.heisha++
+      }
+      if (getCardNumAndSuit(cardID)['cardSuit'] == '♠' && getCardNumAndSuit(cardID)['cardNum'] >= 2 && getCardNumAndSuit(cardID)['cardNum'] <= 9) {
+        deckState.suits.spade2_9++
+      }
+      document.getElementById('iframe-source').contentWindow.document.getElementById('heart').innerText = '♥红桃 × ' + deckState.suits.heart
+      document.getElementById('iframe-source').contentWindow.document.getElementById('club').innerText = '♣梅花 × ' + deckState.suits.club
+      document.getElementById('iframe-source').contentWindow.document.getElementById('spade').innerText = '♠黑桃 × ' + deckState.suits.spade
+      document.getElementById('iframe-source').contentWindow.document.getElementById('diamond').innerText = '♦方片 × ' + deckState.suits.diamond
+      // document.getElementById('iframe-source').contentWindow.document.getElementById("shandian").innerText ="♠黑桃2~9 概率:"+ (spade2_9/paidui.size).toFixed(2);
+      //document.getElementById('iframe-source').contentWindow.document.getElementById("paiduiSize").innerText ="牌堆张数: "+ paidui.size;
+      document.getElementById('iframe-source').contentWindow.document.getElementById('hongsha').innerText = '红杀 × ' + deckState.suits.hongsha
+      document.getElementById('iframe-source').contentWindow.document.getElementById('heisha').innerText = '黑杀 × ' + deckState.suits.heisha
+    }
+  }
 }
