@@ -3,6 +3,9 @@ import html from './html/iframe'
 import skinHTML from './html/skin'
 import { drawMiZhu } from './draw'
 import { MiZhuCal } from './utils/calc'
+import skinMap from "./map/skinMap.js";
+import {gameState, deckState} from './logic.js'
+
 
 let iframe = null
 let closeIframe = false
@@ -170,12 +173,12 @@ function buttonClick(userID) {
   var mySeat2BTN = document.getElementById('iframe-source').contentWindow.document.getElementById('mySeatID2')
 
   MiZhuCalBTN.onmousedown = function () {
-    if (mySeatID.size == 1) {
+    if (gameState.mySeatID.size == 1) {
       mySeat1BTN.style.display = 'none'
       mySeat2BTN.style.display = 'none'
-      for (const m of mySeatID) {
-        MiZhuCards = []
-        for (const card of shoupai[idOrder[m]]) {
+      for (const m of gameState.mySeatID) {
+        let MiZhuCards = []
+        for (const card of deckState.shoupai[gameState.idOrder[m]]) {
           MiZhuCards.push(getCardNumAndSuit(card)['cardNum'])
         }
         let MiZhuRes = MiZhuCal(MiZhuCards, MiZhuCards.length)
@@ -183,14 +186,14 @@ function buttonClick(userID) {
       }
     } else {
       var index = 0
-      for (const m of mySeatID) {
+      for (const m of gameState.mySeatID) {
         index += 1
         var seatIND = 'mySeatID' + index
         document.getElementById('iframe-source').contentWindow.document.getElementById(seatIND).style.display = 'block'
         document.getElementById('iframe-source').contentWindow.document.getElementById(seatIND).innerText = '座位: ' + (idOrder[m] + 1)
         document.getElementById('iframe-source').contentWindow.document.getElementById(seatIND).onmousedown = function () {
-          MiZhuCards = []
-          for (const card of shoupai[idOrder[m]]) {
+          let MiZhuCards = []
+          for (const card of deckState.shoupai[gameState.idOrder[m]]) {
             MiZhuCards.push(getCardNumAndSuit(card)['cardNum'])
           }
           let MiZhuRes = MiZhuCal(MiZhuCards, MiZhuCards.length)

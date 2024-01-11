@@ -22,7 +22,7 @@ const deckConfig = {
 }
 let mySkin
 let card = {}
-let disableSkinLogic = true
+
 let gameState = {
   seat: 0, //用于座位安排
   isFirstTime: true, //第一次不会弹出skin窗口，只有oldGeneralID != GeneralID 时（新一局游戏）， 才会 isFirstTime = true；新一局游戏开始重置
@@ -46,8 +46,12 @@ let gameState = {
   enableQuanBian: false,
   enableHuaMu: false,
   isClickSkinSelect: false,
-  curGeneral: -1
+  curGeneral: -1,
+  oldGeneralID: 999,
+  GeneralID : 999
+
 }
+
 
 let deckState = {
   paidui: new Set(), //, 别人摸未知牌不会改变,自己mainID摸牌会减少的牌,场上有明牌都会被移出,此牌堆包括别人手牌
@@ -77,10 +81,8 @@ let deckState = {
   temShouPai: new Set(), //用于处理临时手牌
   remShouPai: new Set() //洗牌后剩余手牌
 }
-
 let insertInd //用于插入顶/底牌堆，黄承彦
 
-// var mySkin
 var account = localStorage.SGS_LASTLOGIN_ACCOUNT
 var accountUsedGeneralSkinID = account + '::UsedGeneralSkinID'
 var UsedGeneralSkinIDString = localStorage[accountUsedGeneralSkinID]
@@ -153,25 +155,7 @@ export function mainLogic(args) {
   // var Param = args['Param']
   // var Params = args['Params']
   let ClientID = args['ClientID'] // 未使用
-  // DestSeatIDs = args['DestSeatIDs']
-  // var GeneralSkinList = args['GeneralSkinList']
-  // var Infos = args['Infos']
-  // var Cards = args['Cards']
-  // var targetSeatID = args['targetSeatID']
-  // var seatId = args['seatId']
 
-  // var Round = args['Round']
-  // var curUserID = args['curUserID']
-  // var userID = args['userID']
-  // var UserID = args['UserID']
-
-  // gameState.enableBoTu = false
-  // gameState.enableQuanBian = false
-
-  if (className == 'ClientLoginRep') {
-    userID = args['uid']
-    console.warn('userID' + userID)
-  }
   //enable博图
   if ((className == 'ClientGeneralSkinRep' && GeneralSkinList[0]['GeneralID'] == 306) || (curUserID == UserID && !gameStatusMap.isGuoZhanBiaoZhun && !gameStatusMap.isGuoZhanYingBian)) {
     gameState.enableBoTu = true
@@ -592,36 +576,16 @@ function gameStatusInit(cardCount) {
 }
 
 export function skinLogic(args) {
+  let globalConfig = {
+    disableSkinLogic : false
+  }
   var GeneralSkinList = args[0] && args[0]['GeneralSkinList']
   let className = args[0] && args[0]['className']
   let curUserID = args[0] && args[0]['ClientID']
   if (curUserID == b) isB = true
 
-  //研究区
-  // if(className == "" && typeof  args[0].idStr != 'undefined'){
-  //     args[0].idStr = "206_20601_狂暴;0;2";
-  // }
 
-  //更改卡背 只有1是有用的
-  if (className == 'GsClientSyncTablePersonalityCardSetRsp') {
-    const seatDatas = args[0].seatDatas
-    for (let i = 0; i < seatDatas.length; i++) {
-      seatDatas[i].cardBackId = 1
-      seatDatas[i].cardFaceId = 1
-    }
-  }
-
-  //无用
-  if (className == '') {
-    // if (args[0].Model&&args[0].Nickname &&args[0].Nickname == "小麦丨麦麦麦"){
-    //     args[0].Model = 8;
-    //     // args[0].SkinItem.RealGeneralID = 161;
-    //     // args[0].SkinItem.SkinID = 16101;
-    //     // console.warn(args[0].SkinItem.GeneralID);
-    //     // console.warn(args[0].SkinItem.RealGeneralID);
-    //     // console.warn(args[0].SkinItem.SkinID);
-    // }
-  }
+  //用于显示隐藏明牌技能
   if (className == 'GsCRoleOptTargetNtf') {
     if (typeof args[0].Params != 'undefined' && args[0].Params.length > 0 && args[0].Spell != null) {
       for (const p of args[0].Params) {
@@ -668,29 +632,29 @@ export function skinLogic(args) {
   // clientID 是seatID 我的seatid通过武将皮肤来获取，进场先跳几条换皮肤的信息，这个时候clientID是正常的，然后clientID变成座位号，可以通过重复的信息确定当前武将id，如果当前武将id等于信息台的武将id，则可以获取到myID
   if (className == 'ClientGeneralSkinRep' && (curUserID == userID || gameState.curGeneral == GeneralSkinList[0]['GeneralID'])) {
     console.warn('curUserID' + curUserID + 'userID' + userID + 'skin')
-    GeneralID = GeneralSkinList[0]['GeneralID']
+    gameState.GeneralID = GeneralSkinList[0]['GeneralID']
     gameState.curGeneral = gameState.curGeneral === -1 ? GeneralSkinList[0]['GeneralID'] : gameState.curGeneral
     if (curUserID < 10) {
       gameState.myID = curUserID
     } //没什么，只是初始化而已
     console.warn('myID' + gameState.myID + 'curGeneral' + gameState.curGeneral + 'skin')
 
-    if (!disableSkinLogic) {
+    if (!globalConfig.disableSkinLogic) {
       //国战模式
       if (gameStatusMap.isGuoZhanBiaoZhun || gameStatusMap.isGuoZhanYingBian) {
         //国战只会换副将，仅仅在需要更新的时候才更新列表避免重复请求
-        if (GuoZhanGeneral.indexOf(GeneralID) == -1) {
-          if (GuoZhanGeneral.length >= 2) {
-            GuoZhanGeneral[1] = GeneralID
+        if (gameState.GuoZhanGeneral.indexOf(GeneralID) == -1) {
+          if (gameState.GuoZhanGeneral.length >= 2) {
+            gameState.GuoZhanGeneral[1] = gameState.GeneralID
           } else {
-            GuoZhanGeneral.push(GeneralID)
+            gameState.GuoZhanGeneral.push(gameState.GeneralID)
           }
-          updateSkinListGuoZhan(GuoZhanGeneral[0], GuoZhanGeneral[1])
-          console.warn('GuoZhanGeneral' + GuoZhanGeneral)
-          isFirstTime = false
+          updateSkinListGuoZhan(gameState.GuoZhanGeneral[0], gameState.GuoZhanGeneral[1])
+          console.warn('GuoZhanGeneral' + gameState.GuoZhanGeneral)
+          gameState.isFirstTime = false
         }
         //新的一局游戏开始，skinID需要初始化，用在localStorage里面的初始化
-        if (!isClickSkinSelect) {
+        if (!gameState.isClickSkinSelect) {
           if (typeof UsedGeneralSkinID != 'undefined' && typeof UsedGeneralSkinID['UsedGeneralSkinID'][GeneralID] != 'undefined') {
             mySkin = UsedGeneralSkinID['UsedGeneralSkinID'][GeneralID]
           }
@@ -699,38 +663,38 @@ export function skinLogic(args) {
         //general不一样：换将/新一局游戏开始
         //进场会有选皮肤框，isFirstTime true 不会跳出自选皮肤框
         //old 用于换将
-        if (GeneralID != oldGeneralID && GeneralID != 999) {
-          updateSkinList(GeneralID)
+        if (gameState.GeneralID != gameState.oldGeneralID && gameState.GeneralID != 999) {
+          updateSkinList(gameState.GeneralID)
           ///999隐匿
-          if (typeof UsedGeneralSkinID != 'undefined' && typeof UsedGeneralSkinID['UsedGeneralSkinID'][GeneralID] != 'undefined') {
-            mySkin = UsedGeneralSkinID['UsedGeneralSkinID'][GeneralID]
-            oldGeneralID = GeneralID
+          if (typeof UsedGeneralSkinID != 'undefined' && typeof UsedGeneralSkinID['UsedGeneralSkinID'][gameState.GeneralID] != 'undefined') {
+            mySkin = UsedGeneralSkinID['UsedGeneralSkinID'][gameState.GeneralID]
+            gameState.oldGeneralID = gameState.GeneralID
             gameState.isFirstTime = true
           } else {
-            if (oldGeneralID == 999) {
+            if (gameState.oldGeneralID == 999) {
               mySkin = 0
             } else {
-              mySkin = UsedGeneralSkinID['UsedGeneralSkinID'][GeneralID]
+              mySkin = UsedGeneralSkinID['UsedGeneralSkinID'][gameState.GeneralID]
             }
-            oldGeneralID = GeneralID
+            gameState.oldGeneralID = gameState.GeneralID
             gameState.isFirstTime = true
           }
         } else {
           gameState.isFirstTime = false
         }
       }
-      console.warn('mySkin: ' + mySkin + ' oldGen: ' + oldGeneralID + ' general: ' + GeneralID + ' isFirstTime: ' + isFirstTime)
-      console.warn('used skin' + UsedGeneralSkinID['UsedGeneralSkinID'][GeneralID] + 'myskin' + mySkin)
+      console.warn('mySkin: ' + mySkin + ' oldGen: ' + gameState.oldGeneralID + ' general: ' + gameState.GeneralID + ' isFirstTime: ' + gameState.isFirstTime)
+      console.warn('used skin' + UsedGeneralSkinID['UsedGeneralSkinID'][gameState.GeneralID] + 'myskin' + mySkin)
 
       if (typeof mySkin != 'undefined') {
         //update my skin to local storage
-        UsedGeneralSkinID['UsedGeneralSkinID'][GeneralID] = mySkin
+        UsedGeneralSkinID['UsedGeneralSkinID'][gameState.GeneralID] = mySkin
         localStorage.setItem(accountUsedGeneralSkinID, JSON.stringify(UsedGeneralSkinID))
         // console.warn(localStorage[accountUsedGeneralSkinID])
         //国战中两个武将，会出现两个武将的全部皮肤，选一个根据class确定现在的角色， 如果match，则换皮肤
         var box = document.getElementById('createSkinIframeSource').contentWindow.document.getElementById(parseInt(mySkin))
         //var box = document.getElementById(parseInt(mySkin));
-        if (box != null && typeof box != 'undefined' && box.classList[1] == GeneralID) {
+        if (box != null && typeof box != 'undefined' && box.classList[1] == gameState.GeneralID) {
           GeneralSkinList[0]['SkinID'] = parseInt(mySkin)
         }
       }
@@ -740,13 +704,29 @@ export function skinLogic(args) {
   }
   // TODO 仅仅是控制没用的，还需要恢复点击原来的皮肤，功能还能用
   if (args == '资源组加载完毕：selectSkin') {
-    if (!disableSkinLogic && !gameState.isFirstTime && document.getElementById('createSkinIframeSource').contentWindow.document.body.innerHTML != '') {
+    if (!globalConfig.disableSkinLogic && !gameState.isFirstTime && document.getElementById('createSkinIframeSource').contentWindow.document.body.innerHTML != '') {
       document.getElementById('createSkinIframe').style.display = 'inline-block'
       clickToChangeSkinAndCloseSkinFrame()
     }
   }
 }
+function clickToChangeSkinAndCloseSkinFrame(){
+  gameState.isClickSkinSelect = true;
+  // click this to change the mySkin first, and it initializes here
+  const boxes = document.getElementById('createSkinIframeSource').contentWindow.document.querySelectorAll('.skinList');
+  if(typeof UsedGeneralSkinID != "undefined" && typeof UsedGeneralSkinID["UsedGeneralSkinID"][GeneralID]!= "undefined"){
+    mySkin =  UsedGeneralSkinID["UsedGeneralSkinID"][GeneralID];
+  }
+  boxes.forEach(box => {
+    box.addEventListener('click', function handleClick(event) {
+      mySkin = box.id;
+      // console.warn('clicked skin'  +mySkin);
 
+      document.getElementById("createSkinIframe").style.display = "none";
+    });
+  });
+
+}
 function gameStart(cardList) {
   deckState.suits = {
     diamond: 0,
@@ -827,14 +807,14 @@ function addCard(id, cardID, zone, ToPosition, SpellID) {
     deckState.paidui.add(cardID)
     addCardType(cardID)
     deckState.ding.push(cardID)
-    console.warn('card ding ' + ding)
+    console.warn('card ding ' + deckState.ding)
   }
   //0 丢到牌堆底
   else if (zone == 1 && id == 255 && ToPosition == 0 && SpellID != 3218) {
     deckState.paidui.add(cardID)
     addCardType(cardID)
     deckState.di.push(cardID)
-    console.warn('card di ' + di)
+    console.warn('card di ' + deckState.di)
   }
   //黄承彦技能
   // else if (zone == 1 && id == 255 && (SpellID == 987)) {
@@ -989,17 +969,17 @@ function removeCard(id, cardID, zone, FromPosition) {
   }
   //从标记区丢牌
   else if (zone == 4) {
-    if (typeof biaoji[id] != 'undefined') {
+    if (typeof deckState.biaoji[id] != 'undefined') {
       gameState.isDuanXian = false
       if (deckState.paidui.delete(cardID)) {
         removeCardType(cardID)
       }
-      let index = biaoji[id].indexOf(cardID)
+      let index = deckState.biaoji[id].indexOf(cardID)
       if (index == -1) {
         cardID = 0
-        index = biaoji[id].indexOf(cardID)
+        index = deckState.biaoji[id].indexOf(cardID)
       }
-      deckState.unknownCard.push(biaoji[id].splice(index, 1)[0])
+      deckState.unknownCard.push(deckState.biaoji[id].splice(index, 1)[0])
     } else {
       gameState.isDuanXian = true
       console.warn('duanxian' + zone + cardID)
@@ -1243,3 +1223,4 @@ export function addSuit(cardID) {
     }
   }
 }
+export {gameState, deckState}
