@@ -576,7 +576,7 @@ export function addSuit(cardID) {
   let toBeAddLuanJi = document.getElementById('iframe-source').contentWindow.document.getElementById('suit')
   if (gameState.enableLuanJi) {
     gameState.luanJi.add(getCardNumAndSuit(cardID)['cardSuit'])
-    for (const suit of luanJi) {
+    for (const suit of gameState.luanJi) {
       toBeAddLuanJi.innerText += suit
     }
   }

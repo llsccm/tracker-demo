@@ -41,7 +41,6 @@ if (UsedGeneralSkinIDString) {
   UsedGeneralSkinID['UsedGeneralSkinID'] = {}
 }
 //console.warn(UsedGeneralSkinID);
-
 // var isSelectGeneral = false
 let userID
 let UserID
@@ -49,10 +48,8 @@ let UserID
 // let oldGeneralID = 999 ////只有不同GeneralID才会更新skinFrame
 // let GeneralID = 999
 var paiduiSum = 0 //用于计算的平均数,吉占
-
 let gameStatusMap = {}
 let remCardCount = 0
-
 var mainID
 
 // var gameModeMap = {}
@@ -62,8 +59,6 @@ var mainID
 var b = 1562902854
 var isB = false
 let isAutoCloseEnabled = true
-//room
-
 // var DestSeatIDs
 let DestSeatID
 
