@@ -25,4 +25,4 @@ Object.defineProperty(console, 'log', {
 })
 SGSMODULE.push(main)
 window.SGSMODULE = SGSMODULE
-main()
+// main()

@@ -1,4 +1,5 @@
 import { gameState, deckState } from './state'
+import { addCardType, removeCardType, addSuit } from './dom'
 
 let insertInd //用于插入顶/底牌堆，黄承彦
 
