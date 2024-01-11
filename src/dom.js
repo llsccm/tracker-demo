@@ -3,9 +3,8 @@ import html from './html/iframe'
 import skinHTML from './html/skin'
 import { drawMiZhu } from './draw'
 import { MiZhuCal } from './utils/calc'
-import skinMap from "./map/skinMap.js";
-import {gameState, deckState} from './logic.js'
-
+import skinMap from './map/skinMap.js'
+import { gameState, deckState, room } from './state'
 
 let iframe = null
 let closeIframe = false
@@ -425,4 +424,176 @@ export function updateSkinListGuoZhan(generalID1, generalID2) {
         this.style.display = 'none'
       }
     })
+}
+
+export function removeCardType(cardID) {
+  if (cardID != 0 && room.cardList.includes(cardID)) {
+    console.warn('card type remove: ' + cardID + room.currentMode[cardID]['name'] + ' ' + JSON.stringify(getCardNumAndSuit(cardID)))
+    if (typeof room.currentCardType[room.currentMode[cardID]['name']] != 'undefined') {
+      let n = room.currentCardType[room.currentMode[cardID]['name']]['cardNum']
+      if (n > 0) {
+        n--
+        room.currentCardType[room.currentMode[cardID]['name']]['cardNum'] = n
+        if (n == 1) {
+          document.getElementById('iframe-source').contentWindow.document.getElementById(room.currentMode[cardID]['name']).disabled = false
+          document.getElementById('iframe-source').contentWindow.document.getElementById(room.currentMode[cardID]['name']).innerText = room.currentMode[cardID]['name']
+        } else if (n == 0) {
+          document.getElementById('iframe-source').contentWindow.document.getElementById(room.currentMode[cardID]['name']).innerText = room.currentMode[cardID]['name']
+          document.getElementById('iframe-source').contentWindow.document.getElementById(room.currentMode[cardID]['name']).disabled = true
+        } else {
+          document.getElementById('iframe-source').contentWindow.document.getElementById(room.currentMode[cardID]['name']).innerText = n + room.currentMode[cardID]['name']
+          document.getElementById('iframe-source').contentWindow.document.getElementById(room.currentMode[cardID]['name']).disabled = false
+        }
+      }
+      if (getCardNumAndSuit(cardID)['cardSuit'] == '♦') {
+        deckState.suits.diamond--
+      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣') {
+        deckState.suits.club--
+      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠') {
+        deckState.suits.spade--
+      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥') {
+        deckState.suits.heart--
+      }
+      if ((getCardNumAndSuit(cardID)['cardSuit'] == '♥' || getCardNumAndSuit(cardID)['cardSuit'] == '♦') && (room.currentMode[cardID]['name'] == '火杀' || room.currentMode[cardID]['name'] == '雷杀' || room.currentMode[cardID]['name'] == '杀')) {
+        deckState.suits.hongsha--
+      } else if ((getCardNumAndSuit(cardID)['cardSuit'] == '♣' || getCardNumAndSuit(cardID)['cardSuit'] == '♠') && (room.currentMode[cardID]['name'] == '火杀' || room.currentMode[cardID]['name'] == '雷杀' || room.currentMode[cardID]['name'] == '杀')) {
+        deckState.suits.heisha--
+      }
+      if (deckState.suits.diamond < 0) {
+        deckState.suits.diamond = 0
+      } else if (deckState.suits.heart < 0) {
+        deckState.suits.heart = 0
+      } else if (deckState.suits.club < 0) {
+        deckState.suits.club = 0
+      } else if (deckState.suits.diamond < 0) {
+        deckState.suits.diamond = 0
+      } else if (deckState.suits.spade < 0) {
+        deckState.suits.spade = 0
+      } else if (deckState.suits.hongsha < 0) {
+        deckState.suits.hongsha = 0
+      } else if (deckState.suits.heisha < 0) {
+        deckState.suits.heisha = 0
+      } else if (deckState.suits.diamond < 0) {
+        deckState.suits.diamond = 0
+      }
+
+      document.getElementById('iframe-source').contentWindow.document.getElementById('heart').innerText = '♥红桃 × ' + deckState.suits.heart
+      document.getElementById('iframe-source').contentWindow.document.getElementById('club').innerText = '♣梅花 × ' + deckState.suits.club
+      document.getElementById('iframe-source').contentWindow.document.getElementById('spade').innerText = '♠黑桃 × ' + deckState.suits.spade
+      document.getElementById('iframe-source').contentWindow.document.getElementById('diamond').innerText = '♦方片 × ' + deckState.suits.diamond
+      // document.getElementById('iframe-source').contentWindow.document.getElementById("shandian").innerText ="♠黑桃2~9 概率:"+ Math.round((spade2_9 / paidui.size) * 100)+'%';
+      document.getElementById('iframe-source').contentWindow.document.getElementById('hongsha').innerText = '红杀 × ' + deckState.suits.hongsha
+      document.getElementById('iframe-source').contentWindow.document.getElementById('heisha').innerText = '黑杀 × ' + deckState.suits.heisha
+    }
+  }
+}
+
+export function addCardType(cardID) {
+  if (cardID != 0 && room.cardList.includes(cardID)) {
+    //console.warn("card type add: " + cardID + currentMode[cardID]["name"] + " " + JSON.stringify(getCardNumAndSuit(cardID)));
+    if (typeof room.currentCardType[room.currentMode[cardID]['name']] != 'undefined') {
+      let n = room.currentCardType[room.currentMode[cardID]['name']]['cardNum']
+      if (n >= 0) {
+        n++
+        room.currentCardType[room.currentMode[cardID]['name']]['cardNum'] = n
+        if (n == 1) {
+          document.getElementById('iframe-source').contentWindow.document.getElementById(room.currentMode[cardID]['name']).disabled = false
+          document.getElementById('iframe-source').contentWindow.document.getElementById(room.currentMode[cardID]['name']).innerText = room.currentMode[cardID]['name']
+        } else if (n == 0) {
+          document.getElementById('iframe-source').contentWindow.document.getElementById(room.currentMode[cardID]['name']).innerText = room.currentMode[cardID]['name']
+          document.getElementById('iframe-source').contentWindow.document.getElementById(room.currentMode[cardID]['name']).disabled = true
+        } else {
+          document.getElementById('iframe-source').contentWindow.document.getElementById(room.currentMode[cardID]['name']).innerText = n + room.currentMode[cardID]['name']
+          document.getElementById('iframe-source').contentWindow.document.getElementById(room.currentMode[cardID]['name']).disabled = false
+        }
+      }
+      if (getCardNumAndSuit(cardID)['cardSuit'] == '♦') {
+        deckState.suits.diamond++
+      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣') {
+        deckState.suits.club++
+      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠') {
+        deckState.suits.spade++
+      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥') {
+        deckState.suits.heart++
+      }
+      if ((getCardNumAndSuit(cardID)['cardSuit'] == '♥' || getCardNumAndSuit(cardID)['cardSuit'] == '♦') && (room.currentMode[cardID]['name'] == '火杀' || room.currentMode[cardID]['name'] == '雷杀' || room.currentMode[cardID]['name'] == '杀')) {
+        deckState.suits.hongsha++
+      } else if ((getCardNumAndSuit(cardID)['cardSuit'] == '♣' || getCardNumAndSuit(cardID)['cardSuit'] == '♠') && (room.currentMode[cardID]['name'] == '火杀' || room.currentMode[cardID]['name'] == '雷杀' || room.currentMode[cardID]['name'] == '杀')) {
+        deckState.suits.heisha++
+      }
+      if (getCardNumAndSuit(cardID)['cardSuit'] == '♠' && getCardNumAndSuit(cardID)['cardNum'] >= 2 && getCardNumAndSuit(cardID)['cardNum'] <= 9) {
+        deckState.suits.spade2_9++
+      }
+      document.getElementById('iframe-source').contentWindow.document.getElementById('heart').innerText = '♥红桃 × ' + deckState.suits.heart
+      document.getElementById('iframe-source').contentWindow.document.getElementById('club').innerText = '♣梅花 × ' + deckState.suits.club
+      document.getElementById('iframe-source').contentWindow.document.getElementById('spade').innerText = '♠黑桃 × ' + deckState.suits.spade
+      document.getElementById('iframe-source').contentWindow.document.getElementById('diamond').innerText = '♦方片 × ' + deckState.suits.diamond
+      // document.getElementById('iframe-source').contentWindow.document.getElementById("shandian").innerText ="♠黑桃2~9 概率:"+ (spade2_9/paidui.size).toFixed(2);
+      //document.getElementById('iframe-source').contentWindow.document.getElementById("paiduiSize").innerText ="牌堆张数: "+ paidui.size;
+      document.getElementById('iframe-source').contentWindow.document.getElementById('hongsha').innerText = '红杀 × ' + deckState.suits.hongsha
+      document.getElementById('iframe-source').contentWindow.document.getElementById('heisha').innerText = '黑杀 × ' + deckState.suits.heisha
+    }
+  }
+}
+
+export function addQuanBian(cardID) {
+  let quanBianText = document.getElementById('iframe-source').contentWindow.document.getElementById('suit')
+  if (gameState.enableQuanBian) {
+    if (getCardNumAndSuit(cardID)['cardSuit'] == '♦' && !gameState.quanBian.has('♦')) {
+      quanBianText.innerText += '♦️'
+      gameState.quanBian.add('♦')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥' && !gameState.quanBian.has('♥')) {
+      quanBianText.innerText += '♥️'
+      gameState.quanBian.add('♥')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠' && !gameState.quanBian.has('♠')) {
+      quanBianText.innerText += '♠️'
+      gameState.quanBian.add('♠')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣' && !gameState.quanBian.has('♣')) {
+      quanBianText.innerText += '♣️'
+      gameState.quanBian.add('♣')
+    }
+  }
+}
+
+export function addSuit(cardID) {
+  let toBeAddBoTu = document.getElementById('iframe-source').contentWindow.document.getElementById('boTu')
+  if (gameState.enableBoTu) {
+    if (getCardNumAndSuit(cardID)['cardSuit'] == '♦' && !gameState.boTu.has('♦')) {
+      toBeAddBoTu.innerText += '♦️'
+      gameState.boTu.add('♦')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥' && !gameState.boTu.has('♥')) {
+      toBeAddBoTu.innerText += '♥️'
+      gameState.boTu.add('♥')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠' && !gameState.boTu.has('♠')) {
+      toBeAddBoTu.innerText += '♠️'
+      gameState.boTu.add('♠')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣' && !gameState.boTu.has('♣')) {
+      toBeAddBoTu.innerText += '♣️'
+      gameState.boTu.add('♣')
+    }
+  }
+
+  let toBeAddLuanJi = document.getElementById('iframe-source').contentWindow.document.getElementById('suit')
+  if (gameState.enableLuanJi) {
+    gameState.luanJi.add(getCardNumAndSuit(cardID)['cardSuit'])
+    for (const suit of luanJi) {
+      toBeAddLuanJi.innerText += suit
+    }
+  }
+  if (gameState.enableHuaMu) {
+    clearSuit('suit', '化木 ')
+    if (getCardNumAndSuit(cardID)['cardSuit'] == '♦') {
+      toBeAdd.innerText += '🟥'
+      gameState.huaMu.add('♦')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥') {
+      toBeAdd.innerText += '🟥'
+      gameState.huaMu.add('♥')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠') {
+      toBeAdd.innerText += '⬛️'
+      gameState.huaMu.add('♠')
+    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣') {
+      toBeAdd.innerText += '⬛️'
+      gameState.huaMu.add('♣')
+    }
+  }
 }

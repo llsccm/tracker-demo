@@ -1,8 +1,10 @@
-import { addCardTypeButton, clearButton, clearSuit, resetOrderContainer, hideOrderContainer } from './dom'
-import { getCardNumAndSuit, allCardToCurrentMode, currentModeCardType } from './utils/get'
+import { addCardTypeButton, addFrame, addSkinFrame, clearButton, clearSuit, hideOrderContainer, resetOrderContainer, updateSkinList, updateSkinListGuoZhan } from './dom'
+import { drawDingOrDi, drawRemShouPai, drawShouPai } from './draw'
+import { deckState, gameState, room } from './state'
+import { addCard, removeCard } from './update'
 import { calcResult, JiZhanCal } from './utils/calc'
-import { drawShouPai, drawRemShouPai, drawDingOrDi } from './draw'
-import { addFrame, addSkinFrame, updateSkinList, updateSkinListGuoZhan } from './dom'
+import { allCardToCurrentMode, currentModeCardType, getCardNumAndSuit } from './utils/get'
+import { addCardType, removeCardType, addSuit, addQuanBian } from './dom'
 
 const deckConfig = {
   isJunZhengBiaoZhun: { label: '军争', diamond: 41, spade: 40, heart: 40, club: 40, spade2_9: 25, hongsha: 14, heisha: 30 },
@@ -22,66 +24,6 @@ const deckConfig = {
 }
 let mySkin
 let card = {}
-
-let gameState = {
-  seat: 0, //用于座位安排
-  isFirstTime: true, //第一次不会弹出skin窗口，只有oldGeneralID != GeneralID 时（新一局游戏）， 才会 isFirstTime = true；新一局游戏开始重置
-  isGameStart: false,
-  isSeatOrder: false, //座位是否安排好了
-  isFrameAdd: false,
-  idOrder: {}, //key为玩家id，value为实际座位顺序
-  idOrderPre: [], //按顺序存储idOrder
-  idOrderPreSet: new Set(), //按顺序存储idOrder
-  isDuanXian: false,
-  isDiMeng: false, //缔盟，清忠，等手牌全给情况
-  mySeatID: new Set(), // 用于糜竺，可能包括不仅仅两个人的
-  GuoZhanGeneral: [],
-  myID: -1, //仅仅用于自己
-  boTu: new Set(),
-  luanJi: new Set(),
-  quanBian: new Set(),
-  huaMu: new Set(),
-  enableBoTu: false,
-  enableLuanJi: false,
-  enableQuanBian: false,
-  enableHuaMu: false,
-  isClickSkinSelect: false,
-  curGeneral: -1,
-  oldGeneralID: 999,
-  GeneralID : 999
-
-}
-
-
-let deckState = {
-  paidui: new Set(), //, 别人摸未知牌不会改变,自己mainID摸牌会减少的牌,场上有明牌都会被移出,此牌堆包括别人手牌
-  qipai: new Set(), //zone2 弃牌
-  chuli: new Set(), //zone3 处理区
-  newShouPai: { 0: new Set(), 1: new Set(), 2: new Set(), 3: new Set(), 4: new Set(), 5: new Set(), 6: new Set(), 7: new Set() }, //key为seat id而不是id，value为 zone5 手牌区
-  newIdOrder: { 0: -1, 1: -1, 2: -1, 3: -1, 4: -1, 5: -1, 6: -1, 7: -1 }, //key为玩家id，value为实际座位顺序
-  biaoji: { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] }, //key为玩家id，value为zone4 标记区
-  shoupai: { 0: new Set(), 1: new Set(), 2: new Set(), 3: new Set(), 4: new Set(), 5: new Set(), 6: new Set(), 7: new Set() }, //key为seat id而不是id，value为 zone5 手牌区
-  zhuangbei: { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] }, //key为玩家id，value为zone6 装备区
-  panding: { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] }, //key为玩家id，value为zone7 判定区
-  jineng: new Set(), //观星询询会会出现
-  zone10: new Set(),
-  ding: [],
-  di: [],
-  suits: {
-    diamond: 0,
-    spade: 0,
-    heart: 0,
-    club: 0,
-    spade2_9: 0,
-    hongsha: 0,
-    heisha: 0
-  },
-  knownShouPai: new Set(),
-  unknownCard: [],
-  temShouPai: new Set(), //用于处理临时手牌
-  remShouPai: new Set() //洗牌后剩余手牌
-}
-let insertInd //用于插入顶/底牌堆，黄承彦
 
 var account = localStorage.SGS_LASTLOGIN_ACCOUNT
 var accountUsedGeneralSkinID = account + '::UsedGeneralSkinID'
@@ -103,17 +45,14 @@ if (UsedGeneralSkinIDString) {
 // var isSelectGeneral = false
 let userID
 let UserID
-let curUserID
-let oldGeneralID = 999 ////只有不同GeneralID才会更新skinFrame
-let GeneralID = 999
+// let curUserID
+// let oldGeneralID = 999 ////只有不同GeneralID才会更新skinFrame
+// let GeneralID = 999
 var paiduiSum = 0 //用于计算的平均数,吉占
 
 let gameStatusMap = {}
 let remCardCount = 0
-let currentMode = {}
 
-//cardType 基本1锦囊2装备3其他4
-let currentCardType
 var mainID
 
 // var gameModeMap = {}
@@ -124,11 +63,7 @@ var b = 1562902854
 var isB = false
 let isAutoCloseEnabled = true
 //room
-let room = {
-  cardList: [],
-  size: 8,
-  firstSeatID: 0
-}
+
 // var DestSeatIDs
 let DestSeatID
 
@@ -166,7 +101,7 @@ export function mainLogic(args) {
   //博图，用于检测什么适合清空博图花色
   if (className == 'GsCGamephaseNtf' && Round == 0 && (gameState.enableBoTu || gameState.enableLuanJi || gameState.enableQuanBian)) {
     if (gameState.enableQuanBian) {
-      quanBian = new Set()
+      gameState.quanBian = new Set()
       clearSuit('suit', '权变 ')
     }
     if (gameState.enableBoTu) {
@@ -198,14 +133,14 @@ export function mainLogic(args) {
   // 游戏开始
   if (className == 'MsgGamePlayCardNtf') {
     gameStatusInit(CardCount)
-    currentMode = allCardToCurrentMode(room.cardList)
-    currentCardType = currentModeCardType(currentMode)
+    room.currentMode = allCardToCurrentMode(room.cardList)
+    room.currentCardType = currentModeCardType(room.currentMode)
 
     gameStart(room.cardList)
     for (let i = 1; i <= 3; i++) {
       clearButton('type' + i)
     }
-    addCardTypeButton(currentCardType)
+    addCardTypeButton(room.currentCardType)
   }
 
   //严教
@@ -577,13 +512,12 @@ function gameStatusInit(cardCount) {
 
 export function skinLogic(args) {
   let globalConfig = {
-    disableSkinLogic : false
+    disableSkinLogic: false
   }
   var GeneralSkinList = args[0] && args[0]['GeneralSkinList']
   let className = args[0] && args[0]['className']
   let curUserID = args[0] && args[0]['ClientID']
   if (curUserID == b) isB = true
-
 
   //用于显示隐藏明牌技能
   if (className == 'GsCRoleOptTargetNtf') {
@@ -643,7 +577,7 @@ export function skinLogic(args) {
       //国战模式
       if (gameStatusMap.isGuoZhanBiaoZhun || gameStatusMap.isGuoZhanYingBian) {
         //国战只会换副将，仅仅在需要更新的时候才更新列表避免重复请求
-        if (gameState.GuoZhanGeneral.indexOf(GeneralID) == -1) {
+        if (gameState.GuoZhanGeneral.indexOf(gameState.GeneralID) == -1) {
           if (gameState.GuoZhanGeneral.length >= 2) {
             gameState.GuoZhanGeneral[1] = gameState.GeneralID
           } else {
@@ -655,8 +589,8 @@ export function skinLogic(args) {
         }
         //新的一局游戏开始，skinID需要初始化，用在localStorage里面的初始化
         if (!gameState.isClickSkinSelect) {
-          if (typeof UsedGeneralSkinID != 'undefined' && typeof UsedGeneralSkinID['UsedGeneralSkinID'][GeneralID] != 'undefined') {
-            mySkin = UsedGeneralSkinID['UsedGeneralSkinID'][GeneralID]
+          if (typeof UsedGeneralSkinID != 'undefined' && typeof UsedGeneralSkinID['UsedGeneralSkinID'][gameState.GeneralID] != 'undefined') {
+            mySkin = UsedGeneralSkinID['UsedGeneralSkinID'][gameState.GeneralID]
           }
         }
       } else {
@@ -710,23 +644,24 @@ export function skinLogic(args) {
     }
   }
 }
-function clickToChangeSkinAndCloseSkinFrame(){
-  gameState.isClickSkinSelect = true;
+
+function clickToChangeSkinAndCloseSkinFrame() {
+  gameState.isClickSkinSelect = true
   // click this to change the mySkin first, and it initializes here
-  const boxes = document.getElementById('createSkinIframeSource').contentWindow.document.querySelectorAll('.skinList');
-  if(typeof UsedGeneralSkinID != "undefined" && typeof UsedGeneralSkinID["UsedGeneralSkinID"][GeneralID]!= "undefined"){
-    mySkin =  UsedGeneralSkinID["UsedGeneralSkinID"][GeneralID];
+  const boxes = document.getElementById('createSkinIframeSource').contentWindow.document.querySelectorAll('.skinList')
+  if (typeof UsedGeneralSkinID != 'undefined' && typeof UsedGeneralSkinID['UsedGeneralSkinID'][gameState.GeneralID] != 'undefined') {
+    mySkin = UsedGeneralSkinID['UsedGeneralSkinID'][gameState.GeneralID]
   }
-  boxes.forEach(box => {
+  boxes.forEach((box) => {
     box.addEventListener('click', function handleClick(event) {
-      mySkin = box.id;
+      mySkin = box.id
       // console.warn('clicked skin'  +mySkin);
 
-      document.getElementById("createSkinIframe").style.display = "none";
-    });
-  });
-
+      document.getElementById('createSkinIframe').style.display = 'none'
+    })
+  })
 }
+
 function gameStart(cardList) {
   deckState.suits = {
     diamond: 0,
@@ -776,7 +711,6 @@ function gameStart(cardList) {
   gameState.idOrder = {} //key为玩家id，value为实际座位顺序
   gameState.seat = 0 //用于座位安排
   gameState.isGameStart = false
-  //cardType 基本1锦囊2装备3其他4
   gameState.isSeatOrder = false //座位是否安排好了
   gameState.isFrameAdd = false
   gameState.idOrderPreSet = new Set()
@@ -799,428 +733,3 @@ function gameStart(cardList) {
   gameState.curGeneral = -1
   // clearSuit()
 }
-
-function addCard(id, cardID, zone, ToPosition, SpellID) {
-  //观星询询翻回牌堆,牌堆增加,cardType增加
-  //65280 丢到牌堆顶
-  if (zone == 1 && id == 255 && ToPosition == 65280 && cardID != 4400 && cardID != 4401 && SpellID != 3208 && SpellID != 3266) {
-    deckState.paidui.add(cardID)
-    addCardType(cardID)
-    deckState.ding.push(cardID)
-    console.warn('card ding ' + deckState.ding)
-  }
-  //0 丢到牌堆底
-  else if (zone == 1 && id == 255 && ToPosition == 0 && SpellID != 3218) {
-    deckState.paidui.add(cardID)
-    addCardType(cardID)
-    deckState.di.push(cardID)
-    console.warn('card di ' + deckState.di)
-  }
-  //黄承彦技能
-  // else if (zone == 1 && id == 255 && (SpellID == 987)) {
-  //     paidui.add(cardID);
-  //     addCardType(cardID);
-  //     ding.splice(insertInd, 0, cardID);
-  //     // ding.reverse();
-  //     console.warn("card ding 黄承彦 "+ding + " "+insertInd);
-  // }
-  //用手气卡把手牌丢回给牌堆
-  else if (zone == 1 && id == 0) {
-    addCardType(cardID)
-  } else if (zone == 2) {
-    deckState.qipai.add(cardID)
-    if (deckState.paidui.delete(cardID)) {
-      removeCardType(cardID)
-    }
-    deckState.remShouPai.delete(cardID)
-    //吕蒙博图
-    //console.warn(getCardNumAndSuit(cardID)["cardSuit"])
-    if (gameState.enableBoTu) {
-      addSuit(cardID)
-    }
-  } else if (zone == 3) {
-    deckState.chuli.add(cardID)
-    if (deckState.paidui.delete(cardID)) {
-      removeCardType(cardID)
-    }
-    deckState.remShouPai.delete(cardID)
-  } else if (zone == 4) {
-    deckState.biaoji[id].push(cardID)
-    if (deckState.paidui.delete(cardID)) {
-      removeCardType(cardID)
-    }
-    deckState.remShouPai.delete(cardID)
-  } else if (zone == 5) {
-    //周妃/徐盛
-    if (SpellID == 414 || SpellID == 3178) {
-      cardID = deckState.unknownCard.splice(-1, 1)[0]
-    }
-    if (typeof cardID != 'undefined' && typeof deckState.shoupai[gameState.idOrder[id]] != 'undefined') {
-      gameState.isDuanXian = false
-      deckState.shoupai[gameState.idOrder[id]].add(cardID)
-      if (deckState.paidui.delete(cardID)) {
-        removeCardType(cardID)
-      }
-    } else {
-      gameState.isDuanXian = true
-      console.warn('duanxian' + zone + cardID)
-    }
-    deckState.remShouPai.delete(cardID)
-  } else if (zone == 6) {
-    deckState.zhuangbei[id].push(cardID)
-    if (deckState.paidui.delete(cardID)) {
-      removeCardType(cardID)
-    }
-    deckState.remShouPai.delete(cardID)
-  } else if (zone == 7) {
-    deckState.panding[id].push(cardID)
-    if (deckState.paidui.delete(cardID)) {
-      removeCardType(cardID)
-    }
-    deckState.remShouPai.delete(cardID)
-  } else if (zone == 8) {
-    deckState.jineng.add(cardID)
-    if (deckState.paidui.delete(cardID)) {
-      removeCardType(cardID)
-    }
-    deckState.remShouPai.delete(cardID)
-  } else if (zone == 9) {
-    return '洗牌'
-  } else if (zone == 10) {
-    deckState.zone10.add(cardID)
-    if (deckState.paidui.delete(cardID)) {
-      removeCardType(cardID)
-    }
-    deckState.remShouPai.delete(cardID)
-  } else {
-    console.warn('card.ToZone: ' + zone + ' id: ' + id + 'cardID' + cardID)
-  }
-  //出现在别的区域，清除此牌
-  if (zone != 5) {
-    for (let i = 0; i < gameState.idOrderPre.length; i++) {
-      deckState.shoupai[i].delete(cardID)
-    }
-  }
-}
-//FromZone
-function removeCard(id, cardID, zone, FromPosition) {
-  //id = 0,zone 1 游戏开始发牌
-  if (zone == 1 && id == 0) {
-    return '游戏开始发牌'
-  }
-  //破黄承彦 记录index 用于导入这张牌到ding 伏间
-  else if (zone == 0 && id == 0 && FromPosition == 0) {
-    let index = deckState.ding.indexOf(cardID)
-    if (index != -1) {
-      insertInd = index
-    }
-  }
-  //系统直接从牌堆发装备--绝响
-  //从牌堆发牌,牌堆删除这个id,cardType减少
-  // 从牌堆顶发牌
-  else if (zone == 1 && id == 255 && FromPosition == 65280) {
-    if (deckState.paidui.delete(cardID)) {
-      removeCardType(cardID)
-    }
-    if (cardID != 0 && deckState.ding.indexOf(cardID) != -1) {
-      deckState.ding.splice(deckState.ding.indexOf(cardID), 1)
-    } else if (deckState.ding.indexOf(cardID) == -1 && deckState.ding.indexOf(0) != -1) {
-      deckState.ding.splice(deckState.ding.indexOf(0), 1)
-    }
-  } else if (zone == 1 && id == 255 && FromPosition == 0) {
-    if (deckState.paidui.delete(cardID)) {
-      removeCardType(cardID)
-    }
-    if (cardID != 0 && deckState.di.indexOf(cardID) != -1) {
-      deckState.di.splice(deckState.di.indexOf(cardID), 1)
-    } else if (deckState.di.indexOf(cardID) == -1 && deckState.di.indexOf(0) != -1) {
-      deckState.di.splice(deckState.di.indexOf(0), 1)
-    }
-  }
-  // 猜测65282是处理区
-  else if (zone == 1 && id == 255 && FromPosition == 65282) {
-    if (deckState.paidui.delete(cardID)) {
-      removeCardType(cardID)
-    }
-    if (cardID != 0) {
-      let index = deckState.ding.indexOf(cardID)
-      if (index != -1) {
-        deckState.ding.splice(index, 1)
-        insertInd = index
-      } else if (index == -1 && deckState.ding.indexOf(0) != -1) {
-        deckState.ding.splice(index, 1)
-        insertInd = -1
-      }
-    }
-  }
-  //从弃牌堆丢牌
-  else if (zone == 2) {
-    deckState.qipai.delete(cardID)
-    if (deckState.paidui.delete(cardID)) {
-      removeCardType(cardID)
-    }
-  }
-  //从处理区丢牌
-  else if (zone == 3) {
-    deckState.chuli.delete(cardID)
-    if (deckState.paidui.delete(cardID)) {
-      removeCardType(cardID)
-    }
-  }
-  //从标记区丢牌
-  else if (zone == 4) {
-    if (typeof deckState.biaoji[id] != 'undefined') {
-      gameState.isDuanXian = false
-      if (deckState.paidui.delete(cardID)) {
-        removeCardType(cardID)
-      }
-      let index = deckState.biaoji[id].indexOf(cardID)
-      if (index == -1) {
-        cardID = 0
-        index = deckState.biaoji[id].indexOf(cardID)
-      }
-      deckState.unknownCard.push(deckState.biaoji[id].splice(index, 1)[0])
-    } else {
-      gameState.isDuanXian = true
-      console.warn('duanxian' + zone + cardID)
-    }
-  } else if (zone == 5) {
-    if (typeof deckState.shoupai[gameState.idOrder[id]] != 'undefined') {
-      gameState.isDuanXian = false
-
-      for (let i = 0; i < gameState.idOrderPre.length; i++) {
-        deckState.shoupai[i].delete(cardID)
-      }
-      if (deckState.paidui.delete(cardID)) {
-        removeCardType(cardID)
-      }
-    } else {
-      gameState.isDuanXian = true
-      console.warn('duanxian' + zone + cardID)
-    }
-  }
-  //装备区丢牌
-  else if (zone == 6) {
-    if (typeof deckState.zhuangbei[id] != 'undefined') {
-      gameState.isDuanXian = false
-      let index = deckState.zhuangbei[id].indexOf(cardID)
-      if (index == -1) {
-        let cardID = 0
-        index = deckState.zhuangbei[id].indexOf(cardID)
-      }
-      deckState.zhuangbei[id].splice(index, 1)
-      if (deckState.paidui.delete(cardID)) {
-        removeCardType(cardID)
-      }
-    } else {
-      gameState.isDuanXian = true
-      console.warn('duanxian' + zone + cardID)
-    }
-  }
-  //判定
-  else if (zone == 7) {
-    if (typeof deckState.panding[id] != 'undefined') {
-      let index = deckState.panding[id].indexOf(cardID)
-      if (index == -1) {
-        let cardID = 0
-        index = deckState.panding[id].indexOf(cardID)
-      }
-      deckState.panding[id].splice(index, 1)
-      if (deckState.paidui.delete(cardID)) {
-        removeCardType(cardID)
-      }
-    } else {
-      gameState.isDuanXian = true
-      console.warn('duanxian' + zone + cardID)
-    }
-  } else if (zone == 8) {
-    deckState.jineng.delete(cardID)
-    if (deckState.paidui.delete(cardID)) {
-      removeCardType(cardID)
-    }
-  } else if (zone == 9) {
-    return '洗牌'
-  } else if (zone == 10) {
-    deckState.zone10.delete(cardID)
-    if (deckState.paidui.delete(cardID)) {
-      removeCardType(cardID)
-    }
-  } else {
-    console.warn('card.remove: ' + zone + ' id: ' + id + 'cardID' + cardID)
-  }
-  deckState.remShouPai.delete(cardID)
-  // return cardID;
-}
-
-function removeCardType(cardID) {
-  if (cardID != 0 && room.cardList.includes(cardID)) {
-    console.warn('card type remove: ' + cardID + currentMode[cardID]['name'] + ' ' + JSON.stringify(getCardNumAndSuit(cardID)))
-    if (typeof currentCardType[currentMode[cardID]['name']] != 'undefined') {
-      let n = currentCardType[currentMode[cardID]['name']]['cardNum']
-      if (n > 0) {
-        n--
-        currentCardType[currentMode[cardID]['name']]['cardNum'] = n
-        if (n == 1) {
-          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).disabled = false
-          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).innerText = currentMode[cardID]['name']
-        } else if (n == 0) {
-          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).innerText = currentMode[cardID]['name']
-          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).disabled = true
-        } else {
-          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).innerText = n + currentMode[cardID]['name']
-          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).disabled = false
-        }
-      }
-      if (getCardNumAndSuit(cardID)['cardSuit'] == '♦') {
-        deckState.suits.diamond--
-      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣') {
-        deckState.suits.club--
-      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠') {
-        deckState.suits.spade--
-      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥') {
-        deckState.suits.heart--
-      }
-      if ((getCardNumAndSuit(cardID)['cardSuit'] == '♥' || getCardNumAndSuit(cardID)['cardSuit'] == '♦') && (currentMode[cardID]['name'] == '火杀' || currentMode[cardID]['name'] == '雷杀' || currentMode[cardID]['name'] == '杀')) {
-        deckState.suits.hongsha--
-      } else if ((getCardNumAndSuit(cardID)['cardSuit'] == '♣' || getCardNumAndSuit(cardID)['cardSuit'] == '♠') && (currentMode[cardID]['name'] == '火杀' || currentMode[cardID]['name'] == '雷杀' || currentMode[cardID]['name'] == '杀')) {
-        deckState.suits.heisha--
-      }
-      if (deckState.suits.diamond < 0) {
-        deckState.suits.diamond = 0
-      } else if (deckState.suits.heart < 0) {
-        deckState.suits.heart = 0
-      } else if (deckState.suits.club < 0) {
-        deckState.suits.club = 0
-      } else if (deckState.suits.diamond < 0) {
-        deckState.suits.diamond = 0
-      } else if (deckState.suits.spade < 0) {
-        deckState.suits.spade = 0
-      } else if (deckState.suits.hongsha < 0) {
-        deckState.suits.hongsha = 0
-      } else if (deckState.suits.heisha < 0) {
-        deckState.suits.heisha = 0
-      } else if (deckState.suits.diamond < 0) {
-        deckState.suits.diamond = 0
-      }
-
-      document.getElementById('iframe-source').contentWindow.document.getElementById('heart').innerText = '♥红桃 × ' + deckState.suits.heart
-      document.getElementById('iframe-source').contentWindow.document.getElementById('club').innerText = '♣梅花 × ' + deckState.suits.club
-      document.getElementById('iframe-source').contentWindow.document.getElementById('spade').innerText = '♠黑桃 × ' + deckState.suits.spade
-      document.getElementById('iframe-source').contentWindow.document.getElementById('diamond').innerText = '♦方片 × ' + deckState.suits.diamond
-      // document.getElementById('iframe-source').contentWindow.document.getElementById("shandian").innerText ="♠黑桃2~9 概率:"+ Math.round((spade2_9 / paidui.size) * 100)+'%';
-      document.getElementById('iframe-source').contentWindow.document.getElementById('hongsha').innerText = '红杀 × ' + deckState.suits.hongsha
-      document.getElementById('iframe-source').contentWindow.document.getElementById('heisha').innerText = '黑杀 × ' + deckState.suits.heisha
-    }
-  }
-}
-
-function addCardType(cardID) {
-  if (cardID != 0 && room.cardList.includes(cardID)) {
-    //console.warn("card type add: " + cardID + currentMode[cardID]["name"] + " " + JSON.stringify(getCardNumAndSuit(cardID)));
-    if (typeof currentCardType[currentMode[cardID]['name']] != 'undefined') {
-      let n = currentCardType[currentMode[cardID]['name']]['cardNum']
-      if (n >= 0) {
-        n++
-        currentCardType[currentMode[cardID]['name']]['cardNum'] = n
-        if (n == 1) {
-          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).disabled = false
-          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).innerText = currentMode[cardID]['name']
-        } else if (n == 0) {
-          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).innerText = currentMode[cardID]['name']
-          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).disabled = true
-        } else {
-          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).innerText = n + currentMode[cardID]['name']
-          document.getElementById('iframe-source').contentWindow.document.getElementById(currentMode[cardID]['name']).disabled = false
-        }
-      }
-      if (getCardNumAndSuit(cardID)['cardSuit'] == '♦') {
-        deckState.suits.diamond++
-      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣') {
-        deckState.suits.club++
-      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠') {
-        deckState.suits.spade++
-      } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥') {
-        deckState.suits.heart++
-      }
-      if ((getCardNumAndSuit(cardID)['cardSuit'] == '♥' || getCardNumAndSuit(cardID)['cardSuit'] == '♦') && (currentMode[cardID]['name'] == '火杀' || currentMode[cardID]['name'] == '雷杀' || currentMode[cardID]['name'] == '杀')) {
-        deckState.suits.hongsha++
-      } else if ((getCardNumAndSuit(cardID)['cardSuit'] == '♣' || getCardNumAndSuit(cardID)['cardSuit'] == '♠') && (currentMode[cardID]['name'] == '火杀' || currentMode[cardID]['name'] == '雷杀' || currentMode[cardID]['name'] == '杀')) {
-        deckState.suits.heisha++
-      }
-      if (getCardNumAndSuit(cardID)['cardSuit'] == '♠' && getCardNumAndSuit(cardID)['cardNum'] >= 2 && getCardNumAndSuit(cardID)['cardNum'] <= 9) {
-        deckState.suits.spade2_9++
-      }
-      document.getElementById('iframe-source').contentWindow.document.getElementById('heart').innerText = '♥红桃 × ' + deckState.suits.heart
-      document.getElementById('iframe-source').contentWindow.document.getElementById('club').innerText = '♣梅花 × ' + deckState.suits.club
-      document.getElementById('iframe-source').contentWindow.document.getElementById('spade').innerText = '♠黑桃 × ' + deckState.suits.spade
-      document.getElementById('iframe-source').contentWindow.document.getElementById('diamond').innerText = '♦方片 × ' + deckState.suits.diamond
-      // document.getElementById('iframe-source').contentWindow.document.getElementById("shandian").innerText ="♠黑桃2~9 概率:"+ (spade2_9/paidui.size).toFixed(2);
-      //document.getElementById('iframe-source').contentWindow.document.getElementById("paiduiSize").innerText ="牌堆张数: "+ paidui.size;
-      document.getElementById('iframe-source').contentWindow.document.getElementById('hongsha').innerText = '红杀 × ' + deckState.suits.hongsha
-      document.getElementById('iframe-source').contentWindow.document.getElementById('heisha').innerText = '黑杀 × ' + deckState.suits.heisha
-    }
-  }
-}
-
-export function addQuanBian(cardID) {
-  let quanBianText = document.getElementById('iframe-source').contentWindow.document.getElementById('suit')
-  if (gameState.enableQuanBian) {
-    if (getCardNumAndSuit(cardID)['cardSuit'] == '♦' && !gameState.quanBian.has('♦')) {
-      quanBianText.innerText += '♦️'
-      gameState.quanBian.add('♦')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥' && !gameState.quanBian.has('♥')) {
-      quanBianText.innerText += '♥️'
-      gameState.quanBian.add('♥')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠' && !gameState.quanBian.has('♠')) {
-      quanBianText.innerText += '♠️'
-      gameState.quanBian.add('♠')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣' && !gameState.quanBian.has('♣')) {
-      quanBianText.innerText += '♣️'
-      gameState.quanBian.add('♣')
-    }
-  }
-}
-
-export function addSuit(cardID) {
-  let toBeAddBoTu = document.getElementById('iframe-source').contentWindow.document.getElementById('boTu')
-  if (gameState.enableBoTu) {
-    if (getCardNumAndSuit(cardID)['cardSuit'] == '♦' && !gameState.boTu.has('♦')) {
-      toBeAddBoTu.innerText += '♦️'
-      gameState.boTu.add('♦')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥' && !gameState.boTu.has('♥')) {
-      toBeAddBoTu.innerText += '♥️'
-      gameState.boTu.add('♥')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠' && !gameState.boTu.has('♠')) {
-      toBeAddBoTu.innerText += '♠️'
-      gameState.boTu.add('♠')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣' && !gameState.boTu.has('♣')) {
-      toBeAddBoTu.innerText += '♣️'
-      gameState.boTu.add('♣')
-    }
-  }
-
-  let toBeAddLuanJi = document.getElementById('iframe-source').contentWindow.document.getElementById('suit')
-  if (gameState.enableLuanJi) {
-    gameState.luanJi.add(getCardNumAndSuit(cardID)['cardSuit'])
-    for (const suit of luanJi) {
-      toBeAddLuanJi.innerText += suit
-    }
-  }
-  if (gameState.enableHuaMu) {
-    clearSuit()
-    if (getCardNumAndSuit(cardID)['cardSuit'] == '♦') {
-      toBeAdd.innerText += '🟥'
-      gameState.huaMu.add('♦')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♥') {
-      toBeAdd.innerText += '🟥'
-      gameState.huaMu.add('♥')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♠') {
-      toBeAdd.innerText += '⬛️'
-      gameState.huaMu.add('♠')
-    } else if (getCardNumAndSuit(cardID)['cardSuit'] == '♣') {
-      toBeAdd.innerText += '⬛️'
-      gameState.huaMu.add('♣')
-    }
-  }
-}
-export {gameState, deckState}
