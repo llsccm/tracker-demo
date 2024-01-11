@@ -189,7 +189,7 @@ function buttonClick(userID) {
         index += 1
         var seatIND = 'mySeatID' + index
         document.getElementById('iframe-source').contentWindow.document.getElementById(seatIND).style.display = 'block'
-        document.getElementById('iframe-source').contentWindow.document.getElementById(seatIND).innerText = '座位: ' + (idOrder[m] + 1)
+        document.getElementById('iframe-source').contentWindow.document.getElementById(seatIND).innerText = '座位: ' + (gameState.idOrder[m] + 1)
         document.getElementById('iframe-source').contentWindow.document.getElementById(seatIND).onmousedown = function () {
           let MiZhuCards = []
           for (const card of deckState.shoupai[gameState.idOrder[m]]) {
