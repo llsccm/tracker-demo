@@ -9,11 +9,11 @@ importers:
   .:
     devDependencies:
       vite:
-        specifier: ^4.5.5
-        version: 4.5.5
+        specifier: ^4.5.6
+        version: 4.5.6
       vite-plugin-monkey:
         specifier: ^3.5.1
-        version: 3.5.1(vite@4.5.5)
+        version: 3.5.1(vite@4.5.6)
 
 packages:
 
@@ -319,8 +319,11 @@ packages:
   picocolors@1.0.0:
     resolution: {integrity: sha512-1fygroTLlHu66zi26VoTDv8yRgm0Fccecssto+MhsZ0D/DGW2sm8E8AjW7NU5VVTRt5GxbeZ5qBuJr+HyLYkjQ==}
 
-  postcss@8.4.33:
-    resolution: {integrity: sha512-Kkpbhhdjw2qQs2O2DGX+8m5OVqEcbB9HRBvuYM9pgrjEFUg30A9LmXNlTAUj4S9kgtGyrMbTzVjH7E+s5Re2yg==}
+  picocolors@1.1.1:
+    resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
+
+  postcss@8.5.2:
+    resolution: {integrity: sha512-MjOadfU3Ys9KYoX0AdkBlFEF1Vx37uCCeN4ZHnmwm9FfpbsGWMZeBLMmmpY+6Ocqod7mkdZ0DT31OlbsFrLlkA==}
     engines: {node: ^10 || ^12 || >=14}
 
   rollup@3.29.5:
@@ -343,8 +346,8 @@ packages:
   signal-exit@3.0.7:
     resolution: {integrity: sha512-wnD2ZE+l+SPC/uoS0vXeE9L1+0wuaMqKlfz9AMUo38JsyLSBWSFcHR1Rri62LZc12vLr1gb3jl7iwQhgwpAbGQ==}
 
-  source-map-js@1.0.2:
-    resolution: {integrity: sha512-R0XvVJ9WusLiqTCEiGCmICCMplcCkIwwR11mOSD9CR5u+IXYdiseeEuXCVAjS54zqwkLcPNnmU4OeJ6tUrWhDw==}
+  source-map-js@1.2.1:
+    resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
 
   strip-final-newline@2.0.0:
@@ -375,8 +378,8 @@ packages:
       vite:
         optional: true
 
-  vite@4.5.5:
-    resolution: {integrity: sha512-ifW3Lb2sMdX+WU91s3R0FyQlAyLxOzCSCP37ujw0+r5POeHPwe6udWVIElKQq8gk3t7b8rkmvqC6IHBpCff4GQ==}
+  vite@4.5.6:
+    resolution: {integrity: sha512-ElBNuVvJKslxcfY2gMmae5IjaKGqCYGicCNZ+8R56sAznobeE3pI9ctzI17cBS/6OJh5YuQNMSN4BP4dRjugBg==}
     engines: {node: ^14.18.0 || >=16.0.0}
     hasBin: true
     peerDependencies:
@@ -656,11 +659,13 @@ snapshots:
 
   picocolors@1.0.0: {}
 
-  postcss@8.4.33:
+  picocolors@1.1.1: {}
+
+  postcss@8.5.2:
     dependencies:
       nanoid: 3.3.8
-      picocolors: 1.0.0
-      source-map-js: 1.0.2
+      picocolors: 1.1.1
+      source-map-js: 1.2.1
 
   rollup@3.29.5:
     optionalDependencies:
@@ -678,7 +683,7 @@ snapshots:
 
   signal-exit@3.0.7: {}
 
-  source-map-js@1.0.2: {}
+  source-map-js@1.2.1: {}
 
   strip-final-newline@2.0.0: {}
 
@@ -690,7 +695,7 @@ snapshots:
 
   untildify@4.0.0: {}
 
-  vite-plugin-monkey@3.5.1(vite@4.5.5):
+  vite-plugin-monkey@3.5.1(vite@4.5.6):
     dependencies:
       acorn-walk: 8.3.1
       cross-spawn: 7.0.6
@@ -701,12 +706,12 @@ snapshots:
       picocolors: 1.0.0
       systemjs: 6.14.3
     optionalDependencies:
-      vite: 4.5.5
+      vite: 4.5.6
 
-  vite@4.5.5:
+  vite@4.5.6:
     dependencies:
       esbuild: 0.18.20
-      postcss: 8.4.33
+      postcss: 8.5.2
       rollup: 3.29.5
     optionalDependencies:
       fsevents: 2.3.3
